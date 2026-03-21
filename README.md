@@ -1,0 +1,2 @@
+# pizdec
+pet project
