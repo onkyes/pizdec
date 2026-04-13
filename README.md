@@ -26,6 +26,7 @@ Pet project на Symfony с Docker-окружением.
 
 ```bash
 docker compose up --build
+```
 
 После запуска приложение доступно по адресу:
 http://localhost:8080
