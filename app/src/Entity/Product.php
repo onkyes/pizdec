@@ -26,8 +26,12 @@ class Product
         private string $category)
     {}
 
-    public function getId(): ?int
+    public function getId(): int
     {
+        if ($this->id === null) {
+            throw new \LogicException('Product id is not initialized.');
+        }
+
         return $this->id;
     }
 
