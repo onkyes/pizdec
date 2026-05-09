@@ -1,17 +1,16 @@
 <?php
 
-
 namespace App\Dto;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-final class CreateProductRequest
+final readonly class CreateProductRequest
 {
-    public readonly string $name;
-    public readonly string $description;
-    public readonly int $price;
-    public readonly int $weight;
-    public readonly string $category;
+    public string $name;
+    public string $description;
+    public int $price;
+    public int $weight;
+    public string $category;
 
     public function __construct(
         #[Assert\NotBlank(message: 'Название не может быть пустым')]
@@ -42,5 +41,4 @@ final class CreateProductRequest
         $this->weight = $weight;
         $this->category = trim($category);
     }
-
 }
