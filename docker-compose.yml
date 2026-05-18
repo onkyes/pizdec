@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: ./php/Dockerfile
       target: ${PHP_TARGET}
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?serverVersion=16&charset=utf8"
     volumes:
       - ./app:/var/www/app
     depends_on:
