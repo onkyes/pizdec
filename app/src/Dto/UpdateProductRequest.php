@@ -7,11 +7,11 @@ use Symfony\Component\Validator\Constraints as Assert;
 final readonly class UpdateProductRequest
 {
     #[Assert\Type('string')]
-    #[Assert\NotBlank(message: 'Название не может быть пустым')]
+    #[Assert\NotBlank(message: 'Название не может быть пустым', allowNull: true)]
     public ?string $name;
 
     #[Assert\Type('string')]
-    #[Assert\NotBlank(message: 'Описание не может быть пустым')]
+    #[Assert\NotBlank(message: 'Описание не может быть пустым', allowNull: true)]
     public ?string $description;
 
     #[Assert\Type('integer', message: 'Цена должна быть целым числом')]
@@ -23,7 +23,7 @@ final readonly class UpdateProductRequest
     public ?int $weight;
 
     #[Assert\Type('string')]
-    #[Assert\NotBlank(message: 'Категория не может быть пустой')]
+    #[Assert\NotBlank(message: 'Категория не может быть пустой', allowNull: true)]
     public ?string $category;
 
     public function __construct(
