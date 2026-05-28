@@ -12,6 +12,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class ProductControllerTest extends WebTestCase
 {
+    use TestHelper;
     public function testListProductSuccess(): void
     {
         $client = static::createClient(); // создаём тестовый http клиент
@@ -68,7 +69,7 @@ final class ProductControllerTest extends WebTestCase
     {
         $client = static::createClient(); // тест-клиент
 
-        $headers = $this->authenticateAsAdmin($client);
+        $headers = $this->authHeaders($client, 'ROLE_ADMIN');
 
         $client->request( //отправляем пост-запрос на ендпоинтс создания продукта
             'POST',
@@ -100,7 +101,7 @@ final class ProductControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $headers = $this->authenticateAsAdmin($client);
+        $headers = $this->authHeaders($client, 'ROLE_ADMIN');
 
         $client->request(
             'POST',
@@ -124,7 +125,7 @@ final class ProductControllerTest extends WebTestCase
     {
         $client = static::createClient(); // тестовый клиент
 
-        $headers = $this->authenticateAsAdmin($client);
+        $headers = $this->authHeaders($client, 'ROLE_ADMIN');
 
         $product = $this->createProduct(); // тестовый продукт
 
@@ -155,7 +156,7 @@ final class ProductControllerTest extends WebTestCase
     {
         $client = static::createClient(); // клиент
 
-        $headers = $this->authenticateAsAdmin($client);
+        $headers = $this->authHeaders($client, 'ROLE_ADMIN');
 
         $product = $this->createProduct(); // продукт. Он должен существовать или проверять будет нечего
 
@@ -178,7 +179,7 @@ final class ProductControllerTest extends WebTestCase
     {
         $client = static::createClient(); // клиент
 
-        $headers = $this->authenticateAsAdmin($client);
+        $headers = $this->authHeaders($client, 'ROLE_ADMIN');
 
         $product = $this->createProduct(); //создаём продукт, чтобы удалить
         $productId = $product->getId(); // айди в отдельную переменную, чтобы проверить
@@ -199,7 +200,7 @@ final class ProductControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $headers = $this->authenticateAsAdmin($client);
+        $headers = $this->authHeaders($client, 'ROLE_ADMIN');
 
         $client->request('DELETE', '/api/products/999999999', [], [], $headers); // несуществующий айди
 
@@ -207,88 +208,4 @@ final class ProductControllerTest extends WebTestCase
         // проверяем что апи возвращает 404 (not found)
     }
 
-    private function createProduct(): Product
-    {
-        $em = static::getContainer()->get(EntityManagerInterface::class);
-        //^^ Берём из симфони сервис доктрин ЕМ, чтобы тест мог записать
-        //продукт в бд
-
-        $product = new Product(
-            'Тестовый продукт',
-            'Тестовое описание',
-            100,
-            500,
-            'test'
-        );
-
-        $em->persist($product);
-        $em->flush();
-
-        return $product;
-    }
-    private function decodeResponse(KernelBrowser $client): array
-    {
-        return json_decode(
-            $client->getResponse()->getContent(),
-            true,
-            512,
-            \JSON_THROW_ON_ERROR
-        );
-    }
-
-    private function createUser(string $email, string $plainPassword, array $roles): User
-    //создать пользователя в тест бд
-    {
-        $user = new User($email, '', $roles); // новый пользователь, пас потом
-
-        $passwordHasher = static::getContainer()->get(UserPasswordHasherInterface::class);
-        // берём из симфони-контейнера сервис, который хеширует пароли
-        $hasherPassword = $passwordHasher->hashPassword($user, $plainPassword);
-        //хешируем пароль
-
-        $user->setPassword($hasherPassword); // записываем хешированный пароль юзеру
-
-        $em = static::getContainer()->get(EntityManagerInterface::class);//вызываем ентити_менеджер
-        $em->persist($user); // записываем перед сохранением
-        $em->flush(); // сохраняем
-
-        return $user; // вернуть user
-    }
-    private function getToken(KernelBrowser $client, string $email, string $password): string
-    // метод, что бы залогинить созданного пользователя
-    {
-        $client->request( // отправка http запроса
-            'POST',
-            '/api/login_check',
-            [],
-            [],
-            ['CONTENT_TYPE' => 'application/json'],
-            json_encode([
-                'email' => $email,
-                'password' => $password,
-            ], JSON_THROW_ON_ERROR) // сборка тела запроса
-        );
-
-        self::assertResponseStatusCodeSame(Response::HTTP_OK); // проверка, -->
-        // --> что +логин и вернулся ответ 200 ОК
-
-       $data = $this->decodeResponse($client); // берём json ответ с сервера и делаем из него http
-       // массив, который вернёт нам токен
-
-        return $data['token']; // вернуть jwt токен
-    }
-
-    private function authenticateAsAdmin(KernelBrowser $client): array
-    {
-        $email = 'admin_' . uniqid() . '@example.com';
-        $password = 'password';
-
-        $this->createUser($email, $password, ['ROLE_ADMIN']);
-        $token = $this->getToken($client, $email, $password);
-
-        return [
-            'CONTENT_TYPE' => 'application/json',
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
-        ];
-    }
 }
