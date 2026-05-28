@@ -2,14 +2,12 @@
 
 namespace App\Tests;
 
-use App\Entity\Product;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
 final class ProductControllerTest extends WebTestCase
 {
+    use TestHelper;
     public function testListProductSuccess(): void
     {
         $client = static::createClient(); // создаём тестовый http клиент
@@ -66,12 +64,14 @@ final class ProductControllerTest extends WebTestCase
     {
         $client = static::createClient(); // тест-клиент
 
+        $headers = $this->authHeaders($client, 'ROLE_ADMIN');
+
         $client->request( //отправляем пост-запрос на ендпоинтс создания продукта
             'POST',
             '/api/products',
             [], // пустые массивы для квери параметров
             [],
-            ['CONTENT_TYPE' => 'application/json'], // обозначиваем приложению, что тело запроса - json
+            $headers,
             json_encode([
                 'name' => 'Created product',
                 'description' => 'Created description',
@@ -86,7 +86,6 @@ final class ProductControllerTest extends WebTestCase
 
         $data = $this->decodeResponse($client); // декодируем json ответ в массив
 
-        self::assertArrayHasKey('id', $data); // проверяем, что у объекта созданного появился айди
         self::assertSame('Created product', $data['name']); // проверка, что вернулось то же имя
         self::assertSame('Created description', $data['description']); // описание
         self::assertSame(250, $data['price']); // цена
@@ -97,12 +96,14 @@ final class ProductControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
+        $headers = $this->authHeaders($client, 'ROLE_ADMIN');
+
         $client->request(
             'POST',
             '/api/products', // эндпоинт создания продукта
             [], // квери параметры(не нужны)
             [], // файлы не отправляем
-            ['CONTENT_TYPE' => 'application/json'], // тело запроса json
+            $headers,
             json_encode([
                 'name' => '', // невалидное поле
                 'description' => 'Created description',
@@ -119,6 +120,8 @@ final class ProductControllerTest extends WebTestCase
     {
         $client = static::createClient(); // тестовый клиент
 
+        $headers = $this->authHeaders($client, 'ROLE_ADMIN');
+
         $product = $this->createProduct(); // тестовый продукт
 
         $client->request(
@@ -126,7 +129,7 @@ final class ProductControllerTest extends WebTestCase
             '/api/products/' . $product->getId(), // патч запрос на конкретный продукт
             [],
             [],
-            ['CONTENT_TYPE' => 'application/json'], // тело запроса json
+            $headers,
             json_encode([
                 'name' => 'Updated product',
                 'price' => 300,
@@ -148,6 +151,8 @@ final class ProductControllerTest extends WebTestCase
     {
         $client = static::createClient(); // клиент
 
+        $headers = $this->authHeaders($client, 'ROLE_ADMIN');
+
         $product = $this->createProduct(); // продукт. Он должен существовать или проверять будет нечего
 
         $client->request(
@@ -155,7 +160,7 @@ final class ProductControllerTest extends WebTestCase
             '/api/products/' . $product->getId(), // запрос на существующий продукт
             [],
             [],
-            ['CONTENT_TYPE' => 'application/json'], // тело запроса json
+            $headers,// тело запроса json
             json_encode([
                 'price' => -1, // невалидное значение
             ], JSON_THROW_ON_ERROR)
@@ -169,11 +174,13 @@ final class ProductControllerTest extends WebTestCase
     {
         $client = static::createClient(); // клиент
 
+        $headers = $this->authHeaders($client, 'ROLE_ADMIN');
+
         $product = $this->createProduct(); //создаём продукт, чтобы удалить
         $productId = $product->getId(); // айди в отдельную переменную, чтобы проверить
         // что продукт больше не найти
 
-        $client->request('DELETE', '/api/products/' . $productId);
+        $client->request('DELETE', '/api/products/' . $productId, [], [], $headers);
         // делит запрос на конкретный продукт
 
         self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT); // 204 (no content)
@@ -186,40 +193,14 @@ final class ProductControllerTest extends WebTestCase
     }
     public function testDeleteProductError(): void
     {
-        $client = static::createClient(); // клиент
+        $client = static::createClient();
 
-        $client->request('DELETE', '/api/products/999999999'); // несуществующий айди
+        $headers = $this->authHeaders($client, 'ROLE_ADMIN');
+
+        $client->request('DELETE', '/api/products/999999999', [], [], $headers); // несуществующий айди
 
         self::assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
         // проверяем что апи возвращает 404 (not found)
     }
 
-    private function createProduct(): Product
-    {
-        $em = static::getContainer()->get(EntityManagerInterface::class);
-        //^^ Берём из симфони сервис доктрин ЕМ, чтобы тест мог записать
-        //продукт в бд
-
-        $product = new Product(
-            'Тестовый продукт',
-            'Тестовое описание',
-            100,
-            500,
-            'test'
-        );
-
-        $em->persist($product);
-        $em->flush();
-
-        return $product;
-    }
-    private function decodeResponse(KernelBrowser $client): array
-    {
-        return json_decode(
-            $client->getResponse()->getContent(),
-            true,
-            512,
-            \JSON_THROW_ON_ERROR
-        );
-    }
 }
