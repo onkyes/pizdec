@@ -39,7 +39,7 @@ jobs:
 
     env:
       APP_ENV: test
-      DATABASE_URL: postgresql://postgres:10@127.0.0.1:5432/pet_project_db_test?serverVersion=16&charset=utf8
+      DATABASE_URL: postgresql://postgres:10@127.0.0.1:5432/pet_project_db?serverVersion=16&charset=utf8
 
     steps:
       - name: Checkout repository
