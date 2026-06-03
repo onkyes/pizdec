@@ -1,33 +1,35 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
+use App\Dto\CreateProductRequest;
 use App\Dto\PaginationRequest;
+use App\Dto\UpdateProductRequest;
 use App\Entity\Product;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryString;
-use Symfony\Component\Routing\Attribute\Route;
-use App\Dto\CreateProductRequest;
-use App\Dto\UpdateProductRequest;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
-
+use Symfony\Component\Routing\Attribute\Route;
 
 final class ProductController extends AbstractController
 {
     #[Route('/api/products', name: 'product_list', methods: ['GET'])]
     public function list(
-        #[MapQueryString] PaginationRequest $pagination,
-        ProductRepository $repository): JsonResponse
-    {
+        #[MapQueryString]
+        PaginationRequest $pagination,
+        ProductRepository $repository,
+    ): JsonResponse {
         $products = $repository->findBy(
             [],
             ['id' => 'ASC'],
             $pagination->limit,
-            $pagination->getOffset()
+            $pagination->getOffset(),
         );
 
         $data = [];
@@ -48,15 +50,17 @@ final class ProductController extends AbstractController
 
         return $this->json(
             $this->serializeProduct($product),
-            Response::HTTP_OK // вернуть продукт в джейсоне (200)
+            Response::HTTP_OK, // вернуть продукт в джейсоне (200)
         );
 
     }
 
     #[Route('/api/products', name: 'product_create', methods: ['POST'])]
-    public function create(#[MapRequestPayload] CreateProductRequest $dto,
-    EntityManagerInterface $em): JsonResponse
-    {
+    public function create(
+        #[MapRequestPayload]
+        CreateProductRequest $dto,
+        EntityManagerInterface $em,
+    ): JsonResponse {
         $product = new Product(
             $dto->name,
             $dto->description,
@@ -70,16 +74,17 @@ final class ProductController extends AbstractController
 
         return $this->json(
             $this->serializeProduct($product),
-            Response::HTTP_CREATED
+            Response::HTTP_CREATED,
         );
     }
 
     #[Route('/api/products/{id}', name: 'product_update', requirements: ['id' => '\d+'], methods: ['PATCH'])]
     public function update(
         int $id,
-        #[MapRequestPayload] UpdateProductRequest $dto,
+        #[MapRequestPayload]
+        UpdateProductRequest $dto,
         EntityManagerInterface $em,
-        ProductRepository $repository
+        ProductRepository $repository,
     ): JsonResponse {
 
         $product = $repository->getById($id);
@@ -124,7 +129,7 @@ final class ProductController extends AbstractController
     public function delete(
         int $id,
         ProductRepository $repository,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
     ): JsonResponse {
         $product = $repository->getById($id);
 
@@ -135,6 +140,9 @@ final class ProductController extends AbstractController
         // удалили, 204 ответ (пустое тело)
     }
 
+    /**
+     * @return array{id: int, name: string, description: string, price: int, weight: int, category: string}
+     */
     private function serializeProduct(Product $product): array
     {
 
@@ -148,5 +156,4 @@ final class ProductController extends AbstractController
             'category' => $product->getCategory(),
         ];
     }
-
 }

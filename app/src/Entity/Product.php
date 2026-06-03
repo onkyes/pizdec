@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\ProductRepository;
@@ -13,6 +15,7 @@ class Product
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
+
     public function __construct(
         #[ORM\Column(length: 255)]
         private string $name,
@@ -23,8 +26,8 @@ class Product
         #[ORM\Column]
         private int $weight,
         #[ORM\Column(length: 255)]
-        private string $category)
-    {}
+        private string $category,
+    ) {}
 
     public function getId(): int
     {
