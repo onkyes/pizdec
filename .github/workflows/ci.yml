@@ -70,6 +70,9 @@ jobs:
       - name: Run PHP CS Fixer
         run: composer cs:check
 
+      - name: Warm up Symfony cache for PHPStan
+        run: php bin/console cache:warmup --env=dev
+
       - name: Run PHPStan
         run: composer phpstan
 
