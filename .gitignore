@@ -2,3 +2,4 @@
 .env.local
 docker-compose.override.yml
 .claude/
+app/config/reference.php
