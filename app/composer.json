@@ -71,11 +71,13 @@
             "assets:install %PUBLIC_DIR%": "symfony-cmd"
         },
         "post-install-cmd": [
-            "@auto-scripts"
+            "@auto-scripts",
+            "@jwt:generate-keypair"
         ],
         "post-update-cmd": [
             "@auto-scripts"
         ],
+        "jwt:generate-keypair": "php bin/console lexik:jwt:generate-keypair --skip-if-exists --no-interaction",
         "cs:check": "php-cs-fixer fix --dry-run --diff --using-cache=no",
         "cs:fix": "php-cs-fixer fix --using-cache=no",
         "phpstan": "phpstan analyse",

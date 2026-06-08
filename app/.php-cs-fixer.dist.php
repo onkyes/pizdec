@@ -15,4 +15,6 @@ $config = new Config();
 
 (new PhpCsFixerCodingStandard())->applyTo($config);
 
-return $config->setFinder($finder);
+return $config
+    ->setCacheFile(__DIR__ . '/var/cache/php-cs-fixer/.php-cs-fixer.cache')
+    ->setFinder($finder);
