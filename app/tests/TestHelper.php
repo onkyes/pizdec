@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests;
 
 use App\Entity\Product;
@@ -11,6 +13,9 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 trait TestHelper // вихууу мой первый трайт
 {
+    /**
+     * @param list<string> $roles
+     */
     private function createUser(string $email, string $plainPassword, array $roles): User
     {
         $user = new User($email, '', $roles);
@@ -27,13 +32,16 @@ trait TestHelper // вихууу мой первый трайт
         return $user;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function decodeResponse(KernelBrowser $client): array
     {
         return json_decode(
             $client->getResponse()->getContent(),
             true,
             512,
-            JSON_THROW_ON_ERROR
+            JSON_THROW_ON_ERROR,
         );
     }
 
@@ -45,10 +53,10 @@ trait TestHelper // вихууу мой первый трайт
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
-            \json_encode([
+            json_encode([
                 'email' => $email,
                 'password' => $password,
-            ], \JSON_THROW_ON_ERROR)
+            ], JSON_THROW_ON_ERROR),
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_OK);
@@ -67,7 +75,7 @@ trait TestHelper // вихууу мой первый трайт
             'Тестовое описание',
             100,
             500,
-            'test'
+            'test',
         );
 
         $em->persist($product);
@@ -76,9 +84,12 @@ trait TestHelper // вихууу мой первый трайт
         return $product;
     }
 
+    /**
+     * @return array<string, string>
+     */
     private function authHeaders(KernelBrowser $client, string $role): array
     {
-        $email = strtolower(str_replace('ROLE_', '', $role)) . '_' . \uniqid() . '@example.com';
+        $email = strtolower(str_replace('ROLE_', '', $role)) . '_' . uniqid() . '@example.com';
         $password = 'password';
 
         $this->createUser($email, $password, [$role]);

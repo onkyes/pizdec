@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -8,9 +10,10 @@ use Symfony\Component\HttpFoundation\Response;
 final class ProductControllerTest extends WebTestCase
 {
     use TestHelper;
+
     public function testListProductSuccess(): void
     {
-        $client = static::createClient(); // создаём тестовый http клиент
+        $client = self::createClient(); // создаём тестовый http клиент
 
         $client->request('GET', '/api/products'); // отправляем гет запрос на список продуктов
 
@@ -18,11 +21,11 @@ final class ProductControllerTest extends WebTestCase
 
         $data = $this->decodeResponse($client); // декодируем json ответ в массив
 
-        self::assertIsArray($data); // проверяем, что список продуктов вернулся массивом
     }
+
     public function testListProductsError(): void
     {
-        $client = static::createClient(); // клиент
+        $client = self::createClient(); // клиент
 
         $client->request('GET', '/api/products?limit=100');
         // отправляем запрос с невалидным limit
@@ -32,7 +35,7 @@ final class ProductControllerTest extends WebTestCase
 
     public function testShowProductSuccess(): void
     {
-        $client = static::createClient(); // создаём тестовый HTTP-клиент
+        $client = self::createClient(); // создаём тестовый HTTP-клиент
 
         $product = $this->createProduct(); // создаём продукт в тестовой БД
 
@@ -53,20 +56,20 @@ final class ProductControllerTest extends WebTestCase
 
     public function testShowProductError(): void
     {
-        $client = static::createClient(); // создание тестового http-клиента симфони
+        $client = self::createClient(); // создание тестового http-клиента симфони
 
-        $client->request('GET', '/api/products/999999999'); //проверка несуществующего айди
+        $client->request('GET', '/api/products/999999999'); // проверка несуществующего айди
 
         self::assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND); // проверка на статус 404
     }
 
     public function testCreateProductSuccess(): void
     {
-        $client = static::createClient(); // тест-клиент
+        $client = self::createClient(); // тест-клиент
 
         $headers = $this->authHeaders($client, 'ROLE_ADMIN');
 
-        $client->request( //отправляем пост-запрос на ендпоинтс создания продукта
+        $client->request( // отправляем пост-запрос на ендпоинтс создания продукта
             'POST',
             '/api/products',
             [], // пустые массивы для квери параметров
@@ -78,7 +81,7 @@ final class ProductControllerTest extends WebTestCase
                 'price' => 250,
                 'weight' => 750,
                 'category' => 'created',
-            ], JSON_THROW_ON_ERROR) // сборка тела запроса
+            ], JSON_THROW_ON_ERROR), // сборка тела запроса
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_CREATED);
@@ -92,9 +95,10 @@ final class ProductControllerTest extends WebTestCase
         self::assertSame(750, $data['weight']); // масса
         self::assertSame('created', $data['category']); // категория
     }
+
     public function testCreateProductError(): void
     {
-        $client = static::createClient();
+        $client = self::createClient();
 
         $headers = $this->authHeaders($client, 'ROLE_ADMIN');
 
@@ -110,15 +114,15 @@ final class ProductControllerTest extends WebTestCase
                 'price' => 250,
                 'weight' => 750,
                 'category' => 'created',
-            ], JSON_THROW_ON_ERROR) // отправляем невалидные данные (нет name)
+            ], JSON_THROW_ON_ERROR), // отправляем невалидные данные (нет name)
         );
 
-        self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);// 422 ошибка
+        self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY); // 422 ошибка
     }
 
     public function testUpdateProductSuccess(): void
     {
-        $client = static::createClient(); // тестовый клиент
+        $client = self::createClient(); // тестовый клиент
 
         $headers = $this->authHeaders($client, 'ROLE_ADMIN');
 
@@ -133,7 +137,7 @@ final class ProductControllerTest extends WebTestCase
             json_encode([
                 'name' => 'Updated product',
                 'price' => 300,
-            ], JSON_THROW_ON_ERROR) // частичное заполнение полей для метода патч
+            ], JSON_THROW_ON_ERROR), // частичное заполнение полей для метода патч
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_OK); // 200 обновление прошло успешно
@@ -147,9 +151,10 @@ final class ProductControllerTest extends WebTestCase
         self::assertSame(500, $data['weight']); // weight НЕ изменился
         self::assertSame('test', $data['category']); // category НЕ изменилась
     }
+
     public function testUpdateProductError(): void
     {
-        $client = static::createClient(); // клиент
+        $client = self::createClient(); // клиент
 
         $headers = $this->authHeaders($client, 'ROLE_ADMIN');
 
@@ -163,7 +168,7 @@ final class ProductControllerTest extends WebTestCase
             $headers,// тело запроса json
             json_encode([
                 'price' => -1, // невалидное значение
-            ], JSON_THROW_ON_ERROR)
+            ], JSON_THROW_ON_ERROR),
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY); // 422
@@ -172,11 +177,11 @@ final class ProductControllerTest extends WebTestCase
 
     public function testDeleteProductSuccess(): void
     {
-        $client = static::createClient(); // клиент
+        $client = self::createClient(); // клиент
 
         $headers = $this->authHeaders($client, 'ROLE_ADMIN');
 
-        $product = $this->createProduct(); //создаём продукт, чтобы удалить
+        $product = $this->createProduct(); // создаём продукт, чтобы удалить
         $productId = $product->getId(); // айди в отдельную переменную, чтобы проверить
         // что продукт больше не найти
 
@@ -191,9 +196,10 @@ final class ProductControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND); // 404
         // пытаемся найти удалённый продукт (проверка)
     }
+
     public function testDeleteProductError(): void
     {
-        $client = static::createClient();
+        $client = self::createClient();
 
         $headers = $this->authHeaders($client, 'ROLE_ADMIN');
 
@@ -202,5 +208,4 @@ final class ProductControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
         // проверяем что апи возвращает 404 (not found)
     }
-
 }

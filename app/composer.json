@@ -24,7 +24,12 @@
         "symfony/yaml": "8.0.*"
     },
     "require-dev": {
+        "phpstan/phpstan": "^2.2",
+        "phpstan/phpstan-doctrine": "^2.0",
+        "phpstan/phpstan-symfony": "^2.0",
         "phpunit/phpunit": "^13.1",
+        "phpyh/coding-standard": "^3.0",
+        "rector/rector": "^2.4",
         "symfony/browser-kit": "8.0.*",
         "symfony/css-selector": "8.0.*",
         "symfony/maker-bundle": "^1.67"
@@ -66,11 +71,18 @@
             "assets:install %PUBLIC_DIR%": "symfony-cmd"
         },
         "post-install-cmd": [
-            "@auto-scripts"
+            "@auto-scripts",
+            "@jwt:generate-keypair"
         ],
         "post-update-cmd": [
             "@auto-scripts"
-        ]
+        ],
+        "jwt:generate-keypair": "php bin/console lexik:jwt:generate-keypair --skip-if-exists --no-interaction",
+        "cs:check": "php-cs-fixer fix --dry-run --diff --using-cache=no",
+        "cs:fix": "php-cs-fixer fix --using-cache=no",
+        "phpstan": "phpstan analyse",
+        "rector:check": "rector process --dry-run",
+        "rector:fix": "rector process"
     },
     "conflict": {
         "symfony/symfony": "*"

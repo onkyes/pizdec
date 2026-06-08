@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t pizdec-app -f ../php/Dockerfile ..
+
+  code-quality:
+    runs-on: ubuntu-latest
+
+    env:
+      APP_ENV: test
+      POSTGRES_DB: pet_project_db_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 10
+      DATABASE_URL: postgresql://postgres:10@127.0.0.1:5432/pet_project_db_test?serverVersion=16&charset=utf8
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d pet_project_db_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: ctype, iconv, pdo_pgsql
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-scripts
+
+      - name: Generate JWT keys
+        run: php bin/console lexik:jwt:generate-keypair --skip-if-exists --no-interaction
+
+      - name: Run Composer scripts
+        run: composer run-script post-install-cmd
+
+      - name: Run migrations
+        run: php bin/console doctrine:migrations:migrate --no-interaction --env=test
+
+      - name: Run PHPUnit
+        run: php bin/phpunit
+
+      - name: Run PHP CS Fixer
+        run: composer cs:check
+
+      - name: Warm up Symfony cache for PHPStan
+        run: php bin/console cache:warmup --env=dev
+
+      - name: Run PHPStan
+        run: composer phpstan
+
+      - name: Run Rector
+        run: composer rector:check

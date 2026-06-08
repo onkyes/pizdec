@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -11,24 +13,24 @@ final class ProductAccessTest extends WebTestCase
 
     public function testLoginSuccess(): void
     {
-        $client = static::createClient(); // тест-клиент
+        $client = self::createClient(); // тест-клиент
 
         $email = 'admin_' . uniqid() . '@example.com';
         // уникальное имя
         $password = 'password';
 
         $this->createUser($email, $password, ['ROLE_ADMIN']);
-// создание пользователя в тест бд, пас захеширован
+        // создание пользователя в тест бд, пас захеширован
         $client->request(
             'POST', // пост запрос
             '/api/login_check',
             [],
             [],
-            ['CONTENT_TYPE' => 'application/json'], //тело запроса json
+            ['CONTENT_TYPE' => 'application/json'], // тело запроса json
             json_encode([
                 'email' => $email,
                 'password' => $password, // обычный пароль
-            ], JSON_THROW_ON_ERROR)
+            ], JSON_THROW_ON_ERROR),
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_OK);
@@ -38,7 +40,7 @@ final class ProductAccessTest extends WebTestCase
         // декодируем json  в пхп массив
 
         self::assertArrayHasKey('token', $data);
-        //Проверяет, что в массиве $data есть ключ 'token'
+        // Проверяет, что в массиве $data есть ключ 'token'
         self::assertIsString($data['token']);
         // проверка на строку
         self::assertNotEmpty($data['token']);
@@ -47,7 +49,7 @@ final class ProductAccessTest extends WebTestCase
 
     public function testLoginError(): void
     {
-        $client = static::createClient(); // тест-клиент
+        $client = self::createClient(); // тест-клиент
 
         $email = 'user_' . uniqid() . '@example.com'; // уникальный email
         $password = 'password'; // правильный пароль, который будет сохранён в БД
@@ -61,11 +63,11 @@ final class ProductAccessTest extends WebTestCase
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
-            \json_encode([
+            json_encode([
                 'email' => $email,
                 'password' => 'wrong-password',
                 //  отправляем неправильный пароль
-            ], \JSON_THROW_ON_ERROR)
+            ], JSON_THROW_ON_ERROR),
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
@@ -74,7 +76,7 @@ final class ProductAccessTest extends WebTestCase
 
     public function testGuestCanRead(): void
     {
-        $client = static::createClient(); // тест-клиент
+        $client = self::createClient(); // тест-клиент
 
         $client->request('GET', '/api/products');
         // ^^ гость без токена делает гет запрос на список продуктов
@@ -86,13 +88,12 @@ final class ProductAccessTest extends WebTestCase
         $data = $this->decodeResponse($client);
         // декодируем json ответ в пхп массив
 
-        self::assertIsArray($data);
-        // проверяем, что список продуктов вернулся массивом
+
     }
 
     public function testGuestCannotCreate(): void
     {
-        $client = static::createClient(); // тест-клиент
+        $client = self::createClient(); // тест-клиент
 
         $client->request(
             'POST',
@@ -100,13 +101,13 @@ final class ProductAccessTest extends WebTestCase
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'], // тело запроса json
-            \json_encode([
+            json_encode([
                 'name' => 'Guest product',
                 'description' => 'Guest description',
                 'price' => 100,
                 'weight' => 200,
                 'category' => 'guest',
-            ], \JSON_THROW_ON_ERROR)
+            ], JSON_THROW_ON_ERROR),
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
@@ -115,7 +116,7 @@ final class ProductAccessTest extends WebTestCase
 
     public function testUserCannotCreate(): void
     {
-        $client = static::createClient(); // тест-клиент
+        $client = self::createClient(); // тест-клиент
 
         $headers = $this->authHeaders($client, 'ROLE_USER');
 
@@ -125,13 +126,13 @@ final class ProductAccessTest extends WebTestCase
             [],
             [],
             $headers,
-            \json_encode([
+            json_encode([
                 'name' => 'User product',
                 'description' => 'User description',
                 'price' => 100,
                 'weight' => 200,
                 'category' => 'user',
-            ], \JSON_THROW_ON_ERROR)
+            ], JSON_THROW_ON_ERROR),
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
@@ -140,7 +141,7 @@ final class ProductAccessTest extends WebTestCase
 
     public function testAdminCanCreate(): void
     {
-        $client = static::createClient();
+        $client = self::createClient();
 
         $headers = $this->authHeaders($client, 'ROLE_ADMIN');
 
@@ -156,7 +157,7 @@ final class ProductAccessTest extends WebTestCase
                 'price' => 100,
                 'weight' => 200,
                 'category' => 'admin',
-            ], \JSON_THROW_ON_ERROR)
+            ], JSON_THROW_ON_ERROR),
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_CREATED);
@@ -171,7 +172,7 @@ final class ProductAccessTest extends WebTestCase
 
     public function testGuestCannotUpdate(): void
     {
-        $client = static::createClient(); // тест-клиент
+        $client = self::createClient(); // тест-клиент
 
         $product = $this->createProduct();
         // создаём продукт в тестовой БД, чтобы было что обновлять
@@ -182,9 +183,9 @@ final class ProductAccessTest extends WebTestCase
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
-            \json_encode([
+            json_encode([
                 'name' => 'Guest updated product',
-            ], \JSON_THROW_ON_ERROR)
+            ], JSON_THROW_ON_ERROR),
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
@@ -193,7 +194,7 @@ final class ProductAccessTest extends WebTestCase
 
     public function testUserCannotUpdate(): void
     {
-        $client = static::createClient(); // тест-клиент
+        $client = self::createClient(); // тест-клиент
 
         $product = $this->createProduct();
         // создаём продукт в тестовой БД, чтобы было что обновлять
@@ -206,9 +207,9 @@ final class ProductAccessTest extends WebTestCase
             [],
             [],
             $headers,
-            \json_encode([
+            json_encode([
                 'name' => 'User updated product',
-            ], \JSON_THROW_ON_ERROR)
+            ], JSON_THROW_ON_ERROR),
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
@@ -217,7 +218,7 @@ final class ProductAccessTest extends WebTestCase
 
     public function testAdminCanUpdate(): void
     {
-        $client = static::createClient(); // клиент
+        $client = self::createClient(); // клиент
 
         $product = $this->createProduct(); // создаём продукт
 
@@ -229,10 +230,10 @@ final class ProductAccessTest extends WebTestCase
             [],
             [],
             $headers,
-            \json_encode([
+            json_encode([
                 'name' => 'Admin updated product',
                 'price' => 300,
-            ], \JSON_THROW_ON_ERROR)
+            ], JSON_THROW_ON_ERROR),
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_OK);
@@ -248,14 +249,14 @@ final class ProductAccessTest extends WebTestCase
         self::assertSame('Admin updated product', $data['name']);
         // проверяем, что имя изменилось
 
-        self::assertSame(300, ($data['price']));
+        self::assertSame(300, $data['price']);
         // проверяем, что цена изменилась
 
     }
 
     public function testGuestCannotDelete(): void
     {
-        $client = static::createClient();
+        $client = self::createClient();
 
         $product = $this->createProduct();
 
@@ -270,7 +271,7 @@ final class ProductAccessTest extends WebTestCase
 
     public function testUserCannotDelete(): void
     {
-        $client = static::createClient();
+        $client = self::createClient();
 
         $product = $this->createProduct();
         // создаём продукт в тестовой БД, чтобы было что удалять
@@ -282,7 +283,7 @@ final class ProductAccessTest extends WebTestCase
             '/api/products/' . $product->getId(),
             [],
             [],
-            $headers
+            $headers,
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
@@ -292,7 +293,7 @@ final class ProductAccessTest extends WebTestCase
 
     public function testAdminCanDelete(): void
     {
-        $client = static::createClient();// тест-клиент
+        $client = self::createClient(); // тест-клиент
 
         $product = $this->createProduct();
         // создаём продукт в тестовой БД, чтобы было что удалять
@@ -319,6 +320,4 @@ final class ProductAccessTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
         // проверяем, что продукт реально удалён и больше не находится
     }
-
-
 }
