@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-
 use App\Dto\AddBasketItemRequest;
 use App\Dto\UpdateBasketItemRequest;
 use App\Entity\Basket;
@@ -13,26 +12,24 @@ use App\Entity\User;
 use App\Repository\BasketItemRepository;
 use App\Repository\BasketRepository;
 use App\Repository\ProductRepository;
+use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\DBAL\Exception\RetryableException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-
-
 
 final readonly class BasketService
 {
     public function __construct(
-        private BasketRepository       $basketRepository,
-        private BasketItemRepository   $basketItemRepository,
-        private ProductRepository      $productRepository,
+        private BasketRepository $basketRepository,
+        private BasketItemRepository $basketItemRepository,
+        private ProductRepository $productRepository,
         private EntityManagerInterface $em,
         private BasketValidator $basketValidator,
     ) {}
 
     public function getOrCreateBasket(User $user): Basket
-        // метод или ищет корзину пользователя или создаёт новую
+    // метод или ищет корзину пользователя или создаёт новую
     {
         $basket = $this->basketRepository->findOneBy([
             'owner' => $user,
@@ -41,10 +38,10 @@ final readonly class BasketService
 
         if ($basket !== null) {
             return $basket;
-            //Если корзина уже есть, возвращаем её.
+            // Если корзина уже есть, возвращаем её.
         }
 
-        $basket = new Basket($user); //
+        $basket = new Basket($user);
 
         $this->em->persist($basket);
         $this->em->flush();
@@ -53,8 +50,8 @@ final readonly class BasketService
     }
 
     public function addItem(User $user, AddBasketItemRequest $dto): Basket
-        // метод "добавить товар в корзину". AddBasketItemRequest - данные из запроса
-        // продуктАйди и quantity
+    // метод "добавить товар в корзину". AddBasketItemRequest - данные из запроса
+    // продуктАйди и quantity
     {
         try {
             return $this->em->wrapInTransaction(function () use ($user, $dto): Basket {
@@ -113,15 +110,16 @@ final readonly class BasketService
                 return $basket;
             });
         } catch (RetryableException $e) {
-            throw new ConflictHttpException('Корзина сейчас обновляется. Повторите запрос.',
-            $e,
+            throw new ConflictHttpException(
+                'Корзина сейчас обновляется. Повторите запрос.',
+                $e,
             );
         }
     }
 
     public function updateItemQuantity(
-        User                    $user,
-        int                     $itemId,
+        User $user,
+        int $itemId,
         UpdateBasketItemRequest $dto,
     ): Basket {
         try {
@@ -158,7 +156,6 @@ final readonly class BasketService
             );
         }
     }
-
 
     public function removeItem(User $user, int $itemId): Basket
     {
@@ -252,7 +249,4 @@ final readonly class BasketService
         // Если корзина есть, возвращаем её.
         return $basket;
     }
-
 }
-
-

@@ -120,6 +120,20 @@ final class BasketController extends AbstractController
         );
     }
 
+    /**
+     * @return array{
+     *     id: int,
+     *     items: list<array{
+     *         id: int,
+     *         productId: int,
+     *         productName: string,
+     *         price: int,
+     *         quantity: int,
+     *         lineTotal: int
+     *     }>,
+     *     total: int
+     * }
+     */
     private function serializeBasket(Basket $basket): array
     {
         $items = []; // сюда будем складывать товары корзины

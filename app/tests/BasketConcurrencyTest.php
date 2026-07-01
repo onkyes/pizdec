@@ -13,13 +13,13 @@ final class BasketConcurrencyTest extends WebTestCase
     use TestHelper;
 
     public function testConcurrentUpdateSameItemIsPredictable(): void
-        // проверяет, что параллельное обновление одной позиции не ломает корзину
+    // проверяет, что параллельное обновление одной позиции не ломает корзину
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
         $headers = $this->authHeaders($client, 'ROLE_USER'); // создаём юзера и получаем токен
 
-        $token = substr($headers['HTTP_AUTHORIZATION'], strlen('Bearer '));
+        $token = substr($headers['HTTP_AUTHORIZATION'], \strlen('Bearer '));
         // ^^достаём сам токен без слова bearer
 
         $product = $this->createProduct(
@@ -47,12 +47,14 @@ final class BasketConcurrencyTest extends WebTestCase
 
         $basketItemId = $data['items'][0]['id']; // достаём id позиции корзины
 
-        $startFile = sys_get_temp_dir() .
-            DIRECTORY_SEPARATOR .
-            'basket_concurrency_' .
-            uniqid('',
-                true) .
-            '.start';
+        $startFile = sys_get_temp_dir()
+            . \DIRECTORY_SEPARATOR
+            . 'basket_concurrency_'
+            . uniqid(
+                '',
+                true,
+            )
+            . '.start';
         // файл-сигнал, по которому два процесса стартуют одновременно
 
         $script = __DIR__ . '/concurrent_basket_request.php'; // путь до helper-скрипта
@@ -65,7 +67,7 @@ final class BasketConcurrencyTest extends WebTestCase
             (string) $basketItemId,
             '4',
             $startFile,
-        ], dirname(__DIR__)); // первый процесс попробует поставить quantity = 4
+        ], \dirname(__DIR__)); // первый процесс попробует поставить quantity = 4
 
         $secondProcess = new Process([
             PHP_BINARY,
@@ -75,7 +77,7 @@ final class BasketConcurrencyTest extends WebTestCase
             (string) $basketItemId,
             '7',
             $startFile,
-        ], dirname(__DIR__)); // второй процесс попробует поставить quantity = 7
+        ], \dirname(__DIR__)); // второй процесс попробует поставить quantity = 7
 
         $firstProcess->setTimeout(10); // ограничиваем время, чтобы тест не завис навсегда
         $secondProcess->setTimeout(10); // то же самое для второго процесса
@@ -132,13 +134,13 @@ final class BasketConcurrencyTest extends WebTestCase
     }
 
     public function testConcurrentAddOnFoodLimitBoundaryDoesNotExceedLimit(): void
-        // проверяет, что два параллельных добавления не могут пробить лимит food
+    // проверяет, что два параллельных добавления не могут пробить лимит food
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
         $headers = $this->authHeaders($client, 'ROLE_USER'); // создаём юзера и получаем токен
 
-        $token = substr($headers['HTTP_AUTHORIZATION'], strlen('Bearer ')); // достаём сам токен без слова bearer
+        $token = substr($headers['HTTP_AUTHORIZATION'], \strlen('Bearer ')); // достаём сам токен без слова bearer
 
         $initialProduct = $this->createProduct(
             category: 'food',
@@ -175,7 +177,7 @@ final class BasketConcurrencyTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(Response::HTTP_OK); // проверяем, что первые 8 товаров добавились
 
-        $startFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'basket_concurrency_' . uniqid('', true) . '.start';
+        $startFile = sys_get_temp_dir() . \DIRECTORY_SEPARATOR . 'basket_concurrency_' . uniqid('', true) . '.start';
         // файл-сигнал, по которому два процесса стартуют одновременно
 
         $script = __DIR__ . '/concurrent_basket_request.php'; // путь до helper-скрипта
@@ -188,7 +190,7 @@ final class BasketConcurrencyTest extends WebTestCase
             (string) $firstProduct->getId(),
             '2',
             $startFile,
-        ], dirname(__DIR__)); // первый процесс попробует добавить ещё 2 food
+        ], \dirname(__DIR__)); // первый процесс попробует добавить ещё 2 food
 
         $secondProcess = new Process([
             PHP_BINARY,
@@ -198,7 +200,7 @@ final class BasketConcurrencyTest extends WebTestCase
             (string) $secondProduct->getId(),
             '2',
             $startFile,
-        ], dirname(__DIR__)); // второй процесс тоже попробует добавить ещё 2 food
+        ], \dirname(__DIR__)); // второй процесс тоже попробует добавить ещё 2 food
 
         $firstProcess->setTimeout(10); // ограничиваем время, чтобы тест не завис навсегда
         $secondProcess->setTimeout(10); // то же самое для второго процесса
@@ -258,11 +260,12 @@ final class BasketConcurrencyTest extends WebTestCase
 
         self::assertSame(10, $totalQuantity); // проверяем, что параллельные запросы не пробили лимит food = 10
     }
+
     /**
      * @return array<string, mixed>
      */
     private function decodeProcessOutput(Process $process): array
-        // превращает json из дочернего процесса в обычный php-массив
+    // превращает json из дочернего процесса в обычный php-массив
     {
         $output = trim($process->getOutput()); // берём stdout процесса
 

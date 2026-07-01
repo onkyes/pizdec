@@ -12,7 +12,7 @@ final class BasketLimitTest extends WebTestCase
     use TestHelper;
 
     public function testFoodLimitClampsToTen(): void
-        // проверяет, что в корзину нельзя добавить больше 10 товаров категории food
+    // проверяет, что в корзину нельзя добавить больше 10 товаров категории food
     {
         $client = self::createClient(); // создаём тестовый хттп-клиент
 
@@ -43,11 +43,12 @@ final class BasketLimitTest extends WebTestCase
 
         self::assertCount(1, $data['items']); // проверяем, что в корзине одна позиция
         self::assertSame(10, $data['items'][0]['quantity']); // проверяем, что quantity стало 10, а не 11
-        self::assertSame(1000, $data['items'][0]['lineTotal']); // 100 * 10 = 1000
-        self::assertSame(1000, $data['total']); // вся корзина тоже на 1000
+        self::assertSame(1_000, $data['items'][0]['lineTotal']); // 100 * 10 = 1000
+        self::assertSame(1_000, $data['total']); // вся корзина тоже на 1000
     }
+
     public function testDrinkLimitClampsToTwenty(): void
-        // проверяет, что в корзину нельзя добавить больше 20 товаров категории drink
+    // проверяет, что в корзину нельзя добавить больше 20 товаров категории drink
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
@@ -78,12 +79,12 @@ final class BasketLimitTest extends WebTestCase
 
         self::assertCount(1, $data['items']); // проверяем, что в корзине одна позиция
         self::assertSame(20, $data['items'][0]['quantity']); // проверяем, что quantity стало 20, а не 21
-        self::assertSame(1000, $data['items'][0]['lineTotal']); // 50 * 20 = 1000
-        self::assertSame(1000, $data['total']); // вся корзина тоже на 1000
+        self::assertSame(1_000, $data['items'][0]['lineTotal']); // 50 * 20 = 1000
+        self::assertSame(1_000, $data['total']); // вся корзина тоже на 1000
     }
 
     public function testFoodLimitCountsExistingQuantity(): void
-        // проверяет, что лимит food считается с учётом товаров, которые уже лежат в корзине
+    // проверяет, что лимит food считается с учётом товаров, которые уже лежат в корзине
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
@@ -128,12 +129,12 @@ final class BasketLimitTest extends WebTestCase
 
         self::assertCount(1, $data['items']); // проверяем, что позиция с этим товаром одна
         self::assertSame(10, $data['items'][0]['quantity']); // проверяем, что получилось 10, а не 13
-        self::assertSame(1000, $data['items'][0]['lineTotal']); // 100 * 10 = 1000
-        self::assertSame(1000, $data['total']); // общая сумма корзины тоже 1000
+        self::assertSame(1_000, $data['items'][0]['lineTotal']); // 100 * 10 = 1000
+        self::assertSame(1_000, $data['total']); // общая сумма корзины тоже 1000
     }
 
     public function testFoodAndDrinkLimitsAreIndependent(): void
-        // проверяет, что food и drink считаются отдельно и не мешают друг другу
+    // проверяет, что food и drink считаются отдельно и не мешают друг другу
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
@@ -194,11 +195,11 @@ final class BasketLimitTest extends WebTestCase
         self::assertSame(10, $quantitiesByProductId[$food->getId()]); // проверяем, что food осталось 10
         self::assertSame(20, $quantitiesByProductId[$drink->getId()]); // проверяем, что drink стало 20
 
-        self::assertSame(2000, $data['total']); // 10 * 100 + 20 * 50 = 2000
+        self::assertSame(2_000, $data['total']); // 10 * 100 + 20 * 50 = 2000
     }
 
     public function testUpdateRejectsQuantityOverCategoryLimit(): void
-        // проверяет, что через patch нельзя поставить quantity выше лимита категории
+    // проверяет, что через patch нельзя поставить quantity выше лимита категории
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 

@@ -46,6 +46,7 @@ class Basket
         if ($this->id === null) {
             throw new \LogicException('Basket id is not initialized.');
         }
+
         return $this->id;
     }
 

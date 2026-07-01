@@ -22,25 +22,18 @@ class BuyerOrderItem
         #[ORM\ManyToOne(inversedBy: 'items')]
         #[ORM\JoinColumn(nullable: false)]
         private BuyerOrder $buyerOrder,
-
         #[ORM\Column]
         private int $productId,
-
         #[ORM\Column(length: 255)]
         private string $productName,
-
         #[ORM\Column]
         private int $productPrice,
-
         #[ORM\Column]
         private int $productWeight,
-
         #[ORM\Column(length: 255)]
         private string $productCategory,
-
         #[ORM\Column]
         private int $quantity,
-
         #[ORM\Column]
         private int $lineTotal,
     ) {

@@ -13,7 +13,6 @@ final readonly class AddBasketItemRequest
         #[Assert\Type('integer', message: 'ID товара должен быть целым числом')]
         #[Assert\Positive(message: 'ID товара должен быть больше 0')]
         public int $productId,
-
         #[Assert\NotNull(message: 'Количество обязательно')]
         #[Assert\Type('integer', message: 'Количество должно быть целым числом')]
         #[Assert\Positive(message: 'Количество должно быть больше 0')]

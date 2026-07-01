@@ -30,7 +30,7 @@ final readonly class CreateProductRequest
     #[Assert\Type('string')]
     #[Assert\Choice(
         choices: ['food', 'drink'],
-        message: 'Категория должна быть food или drink'
+        message: 'Категория должна быть food или drink',
     )]
     public string $category;
 

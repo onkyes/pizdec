@@ -32,12 +32,11 @@ final readonly class CreateOrderRequest
     #[Assert\NotBlank(message: 'Необходимо указать квартиру', allowNull: true)]
     public ?string $deliveryApartment;
 
-
     #[Assert\NotBlank(message: 'Необходимо указать почтовый индекс')]
     #[Assert\Type('string')]
     #[Assert\Regex(
         pattern: '/^\d{6}$/',
-        message: 'Индекс должен состоять из 6 цифр'
+        message: 'Индекс должен состоять из 6 цифр',
     )]
     public string $deliveryPostalCode;
 
@@ -58,5 +57,4 @@ final readonly class CreateOrderRequest
         $this->deliveryEntrance = $deliveryEntrance !== null ? trim($deliveryEntrance) : null;
         $this->deliveryApartment = $deliveryApartment !== null ? trim($deliveryApartment) : null;
     }
-
 }

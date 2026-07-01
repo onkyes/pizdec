@@ -51,7 +51,7 @@ final class OrderController extends AbstractController
         $orders = $orderService->getUserOrders($user);
 
         $data = array_map(
-            fn (BuyerOrder $order): array => $this->serializeOrder($order),
+            fn(BuyerOrder $order): array => $this->serializeOrder($order),
             $orders,
         );
 
@@ -82,6 +82,34 @@ final class OrderController extends AbstractController
         );
     }
 
+    /**
+     * @return array{
+     *     id: int,
+     *     status: string,
+     *     total: int,
+     *     deliveryAddress: array{
+     *         region: string,
+     *         city: string,
+     *         street: string,
+     *         house: string,
+     *         entrance: string|null,
+     *         apartment: string|null,
+     *         postalCode: string
+     *     },
+     *     items: list<array{
+     *         id: int,
+     *         productId: int,
+     *         productName: string,
+     *         productPrice: int,
+     *         productWeight: int,
+     *         productCategory: string,
+     *         quantity: int,
+     *         lineTotal: int
+     *     }>,
+     *     createdAt: string,
+     *     updatedAt: string
+     * }
+     */
     private function serializeOrder(BuyerOrder $order): array
     {
         $items = []; // сюда складываем товары заказа

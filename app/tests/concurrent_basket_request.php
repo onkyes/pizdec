@@ -14,7 +14,7 @@ $_ENV['KERNEL_CLASS'] = Kernel::class; // дублируем для окруже
 require __DIR__ . '/bootstrap.php'; // подключаем автозагрузку и .env.test
 
 function waitForStartFile(string $startFile): void
-    // ждёт файл-сигнал, чтобы два процесса стартовали почти одновременно
+// ждёт файл-сигнал, чтобы два процесса стартовали почти одновременно
 {
     $startedAt = microtime(true); // запоминаем время старта ожидания
 

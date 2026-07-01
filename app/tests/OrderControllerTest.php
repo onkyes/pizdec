@@ -6,7 +6,8 @@ namespace App\Tests;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
-class OrderControllerTest extends WebTestCase
+
+final class OrderControllerTest extends WebTestCase
 {
     use TestHelper;
 
@@ -33,7 +34,7 @@ class OrderControllerTest extends WebTestCase
             json_encode([
                 'productId' => $product->getId(),
                 'quantity' => 2,
-            ], JSON_THROW_ON_ERROR)
+            ], JSON_THROW_ON_ERROR),
         ); // добавляем корзину
 
         self::assertResponseStatusCodeSame(Response::HTTP_OK);
@@ -46,17 +47,17 @@ class OrderControllerTest extends WebTestCase
             [],
             $headers,
             json_encode([
-                    'deliveryRegion' => 'Московская область',
-                    'deliveryCity' => 'Москва',
-                    'deliveryStreet' => 'Ленина',
-                    'deliveryHouse' => '10',
-                    'deliveryEntrance' => '1',
-                    'deliveryApartment' => '25',
-                    'deliveryPostalCode' => '123456',
-                ], JSON_THROW_ON_ERROR),
-        ); //оформляем заказ с валидным адресом доставки
+                'deliveryRegion' => 'Московская область',
+                'deliveryCity' => 'Москва',
+                'deliveryStreet' => 'Ленина',
+                'deliveryHouse' => '10',
+                'deliveryEntrance' => '1',
+                'deliveryApartment' => '25',
+                'deliveryPostalCode' => '123456',
+            ], JSON_THROW_ON_ERROR),
+        ); // оформляем заказ с валидным адресом доставки
 
-        self::assertResponseStatusCodeSame(Response::HTTP_CREATED);// проверяем, что заказ создан
+        self::assertResponseStatusCodeSame(Response::HTTP_CREATED); // проверяем, что заказ создан
 
         $data = $this->decodeResponse($client); // декодируем json ответ
 
@@ -82,8 +83,9 @@ class OrderControllerTest extends WebTestCase
         self::assertSame(2, $data['items'][0]['quantity']); // проверяем количество товара
         self::assertSame(200, $data['items'][0]['lineTotal']); // проверяем сумму строки
     }
+
     public function testCreateOrderRejectsEmptyBasket(): void
-        // проверяет, что нельзя оформить заказ с пустой корзиной
+    // проверяет, что нельзя оформить заказ с пустой корзиной
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
@@ -120,7 +122,7 @@ class OrderControllerTest extends WebTestCase
     }
 
     public function testCreateOrderRejectsInvalidAddress(): void
-        // проверяет, что заказ нельзя создать с невалидным адресом доставки
+    // проверяет, что заказ нельзя создать с невалидным адресом доставки
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
@@ -168,7 +170,7 @@ class OrderControllerTest extends WebTestCase
     }
 
     public function testListReturnsUserOrders(): void
-        // проверяет, что пользователь может получить список своих заказов
+    // проверяет, что пользователь может получить список своих заказов
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 

@@ -54,6 +54,7 @@ final class BasketControllerTest extends WebTestCase
         self::assertSame(200, $data['items'][0]['lineTotal']); // проверяем сумму по этой позиции
         self::assertSame(200, $data['total']); // проверяем общую сумму корзины
     }
+
     public function testAddMergesExistingItemQuantity(): void
     {
         // проверяем, что повторное добавление товара увеличивает количество, а не создаёт дубль
@@ -106,7 +107,7 @@ final class BasketControllerTest extends WebTestCase
     }
 
     public function testUpdateChangesQuantity(): void
-        // проверяем, что patch меняет количество уже существующей позиции корзины
+    // проверяем, что patch меняет количество уже существующей позиции корзины
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
@@ -160,8 +161,9 @@ final class BasketControllerTest extends WebTestCase
         self::assertSame(500, $data['items'][0]['lineTotal']); // 100 * 5 = 500
         self::assertSame(500, $data['total']); // общая сумма корзины тоже 500
     }
+
     public function testDeleteRemovesItem(): void
-        // проверяет, что можно удалить одну конкретную позицию из корзины
+    // проверяет, что можно удалить одну конкретную позицию из корзины
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
@@ -207,9 +209,10 @@ final class BasketControllerTest extends WebTestCase
         self::assertSame([], $data['items']); // проверяем, что товаров в корзине больше нет
         self::assertSame(0, $data['total']); // проверяем, что общая сумма стала 0
     }
+
     public function testShowCreatesEmptyBasket(): void
-        // проверяет, что пользователь может получить свою корзину
-        // если корзины ещё нет, она создаётся пустой
+    // проверяет, что пользователь может получить свою корзину
+    // если корзины ещё нет, она создаётся пустой
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
@@ -231,8 +234,9 @@ final class BasketControllerTest extends WebTestCase
         self::assertSame([], $data['items']); // проверяем, что новая корзина пустая
         self::assertSame(0, $data['total']); // проверяем, что сумма пустой корзины равна 0
     }
+
     public function testClearEmptiesBasket(): void
-        // проверяет, что можно очистить всю корзину сразу
+    // проверяет, что можно очистить всю корзину сразу
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
@@ -295,5 +299,4 @@ final class BasketControllerTest extends WebTestCase
         self::assertSame([], $data['items']); // проверяем, что в корзине больше нет товаров
         self::assertSame(0, $data['total']); // проверяем, что сумма корзины стала 0
     }
-
 }

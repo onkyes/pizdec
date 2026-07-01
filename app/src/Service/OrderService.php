@@ -17,7 +17,6 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final readonly class OrderService
 {
-
     public function __construct(
         private BasketRepository $basketRepository,
         private BuyerOrderRepository $buyerOrderRepository,

@@ -18,7 +18,6 @@ class BuyerOrder
     public const STATUS_DELIVERING = 'delivering';
     public const STATUS_COMPLETED = 'completed';
     public const STATUS_CANCELLED = 'cancelled';
-
     private const ALLOWED_STATUSES = [
         self::STATUS_CREATED,
         self::STATUS_PAID,
@@ -49,31 +48,22 @@ class BuyerOrder
         #[ORM\ManyToOne(inversedBy: 'buyerOrders')]
         #[ORM\JoinColumn(nullable: false)]
         private User $owner,
-
         #[ORM\Column(length: 50)]
         private string $status,
-
         #[ORM\Column]
         private int $total,
-
         #[ORM\Column(length: 255)]
         private string $deliveryRegion,
-
         #[ORM\Column(length: 255)]
         private string $deliveryCity,
-
         #[ORM\Column(length: 255)]
         private string $deliveryStreet,
-
         #[ORM\Column(length: 50)]
         private string $deliveryHouse,
-
         #[ORM\Column(length: 20)]
         private string $deliveryPostalCode,
-
         #[ORM\Column(length: 50, nullable: true)]
         private ?string $deliveryEntrance = null,
-
         #[ORM\Column(length: 50, nullable: true)]
         private ?string $deliveryApartment = null,
     ) {
@@ -146,7 +136,6 @@ class BuyerOrder
 
         return $this;
     }
-
 
     public function getDeliveryRegion(): string
     {

@@ -7,7 +7,6 @@ namespace App\Service;
 use App\Entity\Basket;
 use App\Entity\BasketItem;
 use App\Entity\Product;
-
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 final readonly class BasketValidator
