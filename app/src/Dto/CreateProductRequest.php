@@ -28,6 +28,10 @@ final readonly class CreateProductRequest
 
     #[Assert\NotBlank(message: 'Категория не может быть пустой')]
     #[Assert\Type('string')]
+    #[Assert\Choice(
+        choices: ['food', 'drink'],
+        message: 'Категория должна быть food или drink'
+    )]
     public string $category;
 
     public function __construct(

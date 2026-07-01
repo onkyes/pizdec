@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -34,6 +36,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private string $password;
 
+    #[ORM\OneToOne(mappedBy: 'owner')]
+    private ?Basket $basket = null;
+
+    /**
+     * @var Collection<int, BuyerOrder>
+     */
+    #[ORM\OneToMany(targetEntity: BuyerOrder::class, mappedBy: 'owner')]
+    private Collection $buyerOrders;
+
     /**
      * @param list<string> $roles
      */
@@ -42,6 +53,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->email = $email;
         $this->roles = $roles;
         $this->password = $password;
+        $this->buyerOrders = new ArrayCollection();
     }
 
     public function getId(): int
@@ -121,5 +133,47 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $data["\0" . self::class . "\0password"] = hash('crc32c', $this->password);
 
         return $data;
+    }
+
+    public function getBasket(): ?Basket
+    {
+        return $this->basket;
+    }
+
+    public function setBasket(Basket $basket): static
+    {
+        // set the owning side of the relation if necessary
+        if ($basket->getOwner() !== $this) {
+            $basket->setOwner($this);
+        }
+
+        $this->basket = $basket;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, BuyerOrder>
+     */
+    public function getBuyerOrders(): Collection
+    {
+        return $this->buyerOrders;
+    }
+
+    public function addBuyerOrder(BuyerOrder $buyerOrder): static
+    {
+        if (!$this->buyerOrders->contains($buyerOrder)) {
+            $this->buyerOrders->add($buyerOrder);
+            $buyerOrder->setOwner($this);
+        }
+
+        return $this;
+    }
+
+    public function removeBuyerOrder(BuyerOrder $buyerOrder): static
+    {
+        $this->buyerOrders->removeElement($buyerOrder);
+
+        return $this;
     }
 }

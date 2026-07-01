@@ -26,6 +26,10 @@ final readonly class UpdateProductRequest
 
     #[Assert\Type('string')]
     #[Assert\NotBlank(message: 'Категория не может быть пустой', allowNull: true)]
+    #[Assert\Choice(
+        choices: ['food', 'drink'],
+        message: 'Категория должна быть food или drink'
+    )]
     public ?string $category;
 
     public function __construct(

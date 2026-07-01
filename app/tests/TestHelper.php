@@ -66,16 +66,20 @@ trait TestHelper // вихууу мой первый трайт
         return $data['token'];
     }
 
-    private function createProduct(): Product
-    {
+    private function createProduct(
+        string $category = 'food',
+        int $price = 100,
+        int $weight = 500,
+        string $name = 'Тестовый продукт',
+    ): Product {
         $em = static::getContainer()->get(EntityManagerInterface::class);
 
         $product = new Product(
-            'Тестовый продукт',
+            $name,
             'Тестовое описание',
-            100,
-            500,
-            'test',
+            $price,
+            $weight,
+            $category,
         );
 
         $em->persist($product);

@@ -106,7 +106,7 @@ final class ProductAccessTest extends WebTestCase
                 'description' => 'Guest description',
                 'price' => 100,
                 'weight' => 200,
-                'category' => 'guest',
+                'category' => 'food',
             ], JSON_THROW_ON_ERROR),
         );
 
@@ -131,7 +131,7 @@ final class ProductAccessTest extends WebTestCase
                 'description' => 'User description',
                 'price' => 100,
                 'weight' => 200,
-                'category' => 'user',
+                'category' => 'food',
             ], JSON_THROW_ON_ERROR),
         );
 
@@ -156,7 +156,7 @@ final class ProductAccessTest extends WebTestCase
                 'description' => 'Admin description',
                 'price' => 100,
                 'weight' => 200,
-                'category' => 'admin',
+                'category' => 'food',
             ], JSON_THROW_ON_ERROR),
         );
 
