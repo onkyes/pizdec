@@ -12,6 +12,9 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: BasketRepository::class)]
 class Basket
 {
+    public const MAX_FOOD_COUNT = 10;
+    public const MAX_DRINK_COUNT = 20;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -33,11 +36,16 @@ class Basket
     #[ORM\OneToMany(targetEntity: BasketItem::class, mappedBy: 'basket', orphanRemoval: true)]
     private Collection $items;
 
-    public function __construct(User $owner)
-    {
+    public function __construct(
+        User $owner,
+        ?\DateTimeImmutable $createdAt = null,
+        ?\DateTimeImmutable $updatedAt = null,
+    ) {
         $this->owner = $owner; // корзина всегда создаётся для конкретного пользователя
-        $this->createdAt = new \DateTimeImmutable(); // дата создания корзины
-        $this->updatedAt = new \DateTimeImmutable(); // при создании дата обновления такая же
+
+        $this->createdAt = $createdAt ?? new \DateTimeImmutable(); // если дату не передали, ставим текущую
+        $this->updatedAt = $updatedAt ?? $this->createdAt; // если updatedAt не передали, берём дату создания
+
         $this->items = new ArrayCollection(); // коллекция товаров корзины, чтобы не работать с null
     }
 

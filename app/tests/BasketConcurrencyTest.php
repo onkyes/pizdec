@@ -12,8 +12,10 @@ final class BasketConcurrencyTest extends WebTestCase
 {
     use TestHelper;
 
+    /**
+     * проверяет, что параллельное обновление одной позиции не ломает корзину.
+     */
     public function testConcurrentUpdateSameItemIsPredictable(): void
-    // проверяет, что параллельное обновление одной позиции не ломает корзину
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
@@ -133,8 +135,10 @@ final class BasketConcurrencyTest extends WebTestCase
         self::assertContains($data['items'][0]['quantity'], [4, 7]); // итог должен быть одним из двух обновлений
     }
 
+    /**
+     * проверяет, что два параллельных добавления не могут пробить лимит food.
+     */
     public function testConcurrentAddOnFoodLimitBoundaryDoesNotExceedLimit(): void
-    // проверяет, что два параллельных добавления не могут пробить лимит food
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
@@ -262,10 +266,11 @@ final class BasketConcurrencyTest extends WebTestCase
     }
 
     /**
+     * превращает json из дочернего процесса в обычный php-массив.
+     *
      * @return array<string, mixed>
      */
     private function decodeProcessOutput(Process $process): array
-    // превращает json из дочернего процесса в обычный php-массив
     {
         $output = trim($process->getOutput()); // берём stdout процесса
 

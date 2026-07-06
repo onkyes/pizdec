@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\DeliveryType;
+use App\Enum\OrderStatus;
 use App\Repository\BuyerOrderRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -12,21 +14,6 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: BuyerOrderRepository::class)]
 class BuyerOrder
 {
-    public const STATUS_CREATED = 'created';
-    public const STATUS_PAID = 'paid';
-    public const STATUS_IN_PROGRESS = 'in_progress';
-    public const STATUS_DELIVERING = 'delivering';
-    public const STATUS_COMPLETED = 'completed';
-    public const STATUS_CANCELLED = 'cancelled';
-    private const ALLOWED_STATUSES = [
-        self::STATUS_CREATED,
-        self::STATUS_PAID,
-        self::STATUS_IN_PROGRESS,
-        self::STATUS_DELIVERING,
-        self::STATUS_COMPLETED,
-        self::STATUS_CANCELLED,
-    ];
-
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -48,31 +35,38 @@ class BuyerOrder
         #[ORM\ManyToOne(inversedBy: 'buyerOrders')]
         #[ORM\JoinColumn(nullable: false)]
         private User $owner,
-        #[ORM\Column(length: 50)]
-        private string $status,
+        #[ORM\Column(type: 'string', length: 50, enumType: OrderStatus::class)]
+        private OrderStatus $status,
         #[ORM\Column]
         private int $total,
-        #[ORM\Column(length: 255)]
-        private string $deliveryRegion,
-        #[ORM\Column(length: 255)]
-        private string $deliveryCity,
-        #[ORM\Column(length: 255)]
-        private string $deliveryStreet,
-        #[ORM\Column(length: 50)]
-        private string $deliveryHouse,
-        #[ORM\Column(length: 20)]
-        private string $deliveryPostalCode,
+        #[ORM\Column(type: 'string', length: 20, enumType: DeliveryType::class)]
+        private DeliveryType $deliveryType, // тип получения заказа: pickup или courier
+
+        #[ORM\Column(length: 255, nullable: true)]
+        private ?string $deliveryRegion, // область нужна только для courier
+
+        #[ORM\Column(length: 255, nullable: true)]
+        private ?string $deliveryCity, // город нужен только для courier
+
+        #[ORM\Column(length: 255, nullable: true)]
+        private ?string $deliveryStreet, // улица нужна только для courier
+
         #[ORM\Column(length: 50, nullable: true)]
-        private ?string $deliveryEntrance = null,
+        private ?string $deliveryHouse, // дом нужен только для courier
+
+        #[ORM\Column(length: 20, nullable: true)]
+        private ?string $deliveryPostalCode, // индекс нужен только для courier
+
         #[ORM\Column(length: 50, nullable: true)]
-        private ?string $deliveryApartment = null,
+        private ?string $deliveryEntrance = null, // подъезд может быть null
+
+        #[ORM\Column(length: 50, nullable: true)]
+        private ?string $deliveryApartment = null, // квартира может быть null
     ) {
         if ($total < 0) {
             // сумма заказа больше 0
             throw new \InvalidArgumentException('Сумма должна быть больше или равна 0.');
         }
-
-        $this->assertValidStatus($status);
 
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
@@ -100,25 +94,16 @@ class BuyerOrder
         return $this;
     }
 
-    public function getStatus(): string
+    public function getStatus(): OrderStatus
     {
         return $this->status;
     }
 
-    public function setStatus(string $status): static
+    public function setStatus(OrderStatus $status): static
     {
-        $this->assertValidStatus($status);
-
         $this->status = $status;
 
         return $this;
-    }
-
-    private function assertValidStatus(string $status): void
-    {
-        if (!\in_array($status, self::ALLOWED_STATUSES, true)) {
-            throw new \InvalidArgumentException('Invalid order status.');
-        }
     }
 
     public function getTotal(): int
@@ -137,48 +122,60 @@ class BuyerOrder
         return $this;
     }
 
-    public function getDeliveryRegion(): string
+    public function getDeliveryType(): DeliveryType
+    {
+        return $this->deliveryType;
+    }
+
+    public function setDeliveryType(DeliveryType $deliveryType): static
+    {
+        $this->deliveryType = $deliveryType;
+
+        return $this;
+    }
+
+    public function getDeliveryRegion(): ?string
     {
         return $this->deliveryRegion;
     }
 
-    public function setDeliveryRegion(string $deliveryRegion): static
+    public function setDeliveryRegion(?string $deliveryRegion): static
     {
         $this->deliveryRegion = $deliveryRegion;
 
         return $this;
     }
 
-    public function getDeliveryCity(): string
+    public function getDeliveryCity(): ?string
     {
         return $this->deliveryCity;
     }
 
-    public function setDeliveryCity(string $deliveryCity): static
+    public function setDeliveryCity(?string $deliveryCity): static
     {
         $this->deliveryCity = $deliveryCity;
 
         return $this;
     }
 
-    public function getDeliveryStreet(): string
+    public function getDeliveryStreet(): ?string
     {
         return $this->deliveryStreet;
     }
 
-    public function setDeliveryStreet(string $deliveryStreet): static
+    public function setDeliveryStreet(?string $deliveryStreet): static
     {
         $this->deliveryStreet = $deliveryStreet;
 
         return $this;
     }
 
-    public function getDeliveryHouse(): string
+    public function getDeliveryHouse(): ?string
     {
         return $this->deliveryHouse;
     }
 
-    public function setDeliveryHouse(string $deliveryHouse): static
+    public function setDeliveryHouse(?string $deliveryHouse): static
     {
         $this->deliveryHouse = $deliveryHouse;
 
@@ -209,12 +206,12 @@ class BuyerOrder
         return $this;
     }
 
-    public function getDeliveryPostalCode(): string
+    public function getDeliveryPostalCode(): ?string
     {
         return $this->deliveryPostalCode;
     }
 
-    public function setDeliveryPostalCode(string $deliveryPostalCode): static
+    public function setDeliveryPostalCode(?string $deliveryPostalCode): static
     {
         $this->deliveryPostalCode = $deliveryPostalCode;
 

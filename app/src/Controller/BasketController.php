@@ -13,6 +13,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
 final class BasketController extends AbstractController
@@ -21,11 +22,7 @@ final class BasketController extends AbstractController
     public function show(
         BasketService $basketService,
     ): JsonResponse {
-        $user = $this->getUser();
-
-        if (!$user instanceof User) {
-            return $this->json(['message' => 'Требуется авторизация'], Response::HTTP_UNAUTHORIZED);
-        }
+        $user = $this->getAuthenticatedUser(); // получаем авторизованного пользователя или сразу отдаём 401
 
         $basket = $basketService->getOrCreateBasket($user);
 
@@ -41,11 +38,7 @@ final class BasketController extends AbstractController
         AddBasketItemRequest $dto,
         BasketService $basketService,
     ): JsonResponse { // Получаем текущего авторизованного пользователя
-        $user = $this->getUser();
-
-        if (!$user instanceof User) {// если пользователя нет - запрос без авторизации
-            return $this->json(['message' => 'Требуется авторизация'], Response::HTTP_UNAUTHORIZED);
-        }
+        $user = $this->getAuthenticatedUser();
 
         // передаём работу сервису. Он ищет корзину и товар и добавляет позицию
         $basket = $basketService->addItem($user, $dto);
@@ -65,12 +58,7 @@ final class BasketController extends AbstractController
         BasketService $basketService,
     ): JsonResponse {
         // Получаем текущего авторизованного пользователя.
-        $user = $this->getUser();
-
-        // Если пользователя нет, значит запрос без авторизации.
-        if (!$user instanceof User) {
-            return $this->json(['message' => 'Требуется авторизация'], Response::HTTP_UNAUTHORIZED);
-        }
+        $user = $this->getAuthenticatedUser();
 
         // Передаём работу сервису:$user = чей пользователь меняет корзину, $id = id позиции корзины из URL, $dto = новое количество из JSON.
         $basket = $basketService->updateItemQuantity($user, $id, $dto);
@@ -87,11 +75,7 @@ final class BasketController extends AbstractController
         int $id,
         BasketService $basketService,
     ): JsonResponse {
-        $user = $this->getUser(); // Получаем текущего авторизованного пользователя.
-
-        if (!$user instanceof User) {
-            return $this->json(['message' => 'Требуется авторизация'], Response::HTTP_UNAUTHORIZED);
-        }
+        $user = $this->getAuthenticatedUser();
 
         $basket = $basketService->removeItem($user, $id);
 
@@ -105,12 +89,7 @@ final class BasketController extends AbstractController
     public function clear(
         BasketService $basketService,
     ): JsonResponse {
-        $user = $this->getUser(); // Получаем текущего авторизованного пользователя.
-
-        // Если пользователя нет, значит запрос без авторизации.
-        if (!$user instanceof User) {
-            return $this->json(['message' => 'Требуется авторизация'], Response::HTTP_UNAUTHORIZED);
-        }
+        $user = $this->getAuthenticatedUser();
 
         $basket = $basketService->clearBasket($user);
 
@@ -163,5 +142,18 @@ final class BasketController extends AbstractController
             'items' => $items, // все позиции корзины
             'total' => $total, // общая сумма корзины
         ];
+    }
+
+    private function getAuthenticatedUser(): User
+    // возвращает текущего пользователя или кидает ошибку 401
+    {
+        $user = $this->getUser(); // достаём пользователя из security
+
+        if (!$user instanceof User) {
+            // если пользователя нет, значит запрос пришёл без нормального токена
+            throw new UnauthorizedHttpException('Bearer', 'Требуется авторизация');
+        }
+
+        return $user; // возвращаем User, чтобы дальше не проверять instanceof в каждом методе
     }
 }

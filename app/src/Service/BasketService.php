@@ -29,92 +29,96 @@ final readonly class BasketService
     ) {}
 
     public function getOrCreateBasket(User $user): Basket
-    // метод или ищет корзину пользователя или создаёт новую
-    {
-        $basket = $this->basketRepository->findOneBy([
-            'owner' => $user,
-            // ищем корзину, где владелец — текущий пользователь
-        ]);
-
-        if ($basket !== null) {
-            return $basket;
-            // Если корзина уже есть, возвращаем её.
-        }
-
-        $basket = new Basket($user);
-
-        $this->em->persist($basket);
-        $this->em->flush();
-
-        return $basket;
-    }
-
-    public function addItem(User $user, AddBasketItemRequest $dto): Basket
-    // метод "добавить товар в корзину". AddBasketItemRequest - данные из запроса
-    // продуктАйди и quantity
+    // ищет корзину пользователя или создаёт новую безопасно для параллельных запросов
     {
         try {
-            return $this->em->wrapInTransaction(function () use ($user, $dto): Basket {
-
-                $basket = $this->getOrCreateBasket($user);
-                // получить корзину пользователя
-
-                $this->em->lock($basket, LockMode::PESSIMISTIC_WRITE);
-                // блокируем корзину на запись внутри транзакции
-
-                $product = $this->productRepository->getById($dto->productId);
-                // ищем товар. ProductRepository отвечает за поиск товаров в базе
-
-                $allowedQuantity = $this->basketValidator->getAllowedQuantityToAdd(
-                    $basket, // корзина пользователя
-                    $product, // товар, который хотим добавить
-                    $dto->quantity, // количество из запроса
-                );
-                // считаем, сколько товара реально можно добавить с учётом лимита категории
-
-                if ($allowedQuantity <= 0) {
-                    // если лимит уже достигнут, ничего не добавляем
-                    return $basket;
-                }
-
-                $basketItem = $this->basketItemRepository->findOneBy([
-                    'basket' => $basket,
-                    'product' => $product,
-                ]);
-
-                if ($basketItem !== null) {
-                    // если позиция уже есть в корзине, новый товар
-                    // не добавляем - увеличиваем количество
-                    $newQuantity = $basketItem->getQuantity() + $allowedQuantity;
-                    // берём старое количество и прибавляем кол-во из запроса
-
-                    $basketItem->setQuantity($newQuantity);
-                    // записываем новое кол-во в объект
-
-                    $this->touchBasket($basket);
-
-                    return $basket;
-                }
-
-                $basketItem = new BasketItem($basket, $product, $allowedQuantity);
-                // такого товара в корзине не нашлось, создаём
-                // новую позицию корзины (чья корзина, какой товар, кол-во)
-
-                $basket->addItem($basketItem);
-                // добавляем товар в коллекцию корзины
-
-                $this->touchBasket($basket);
-
-                $this->em->persist($basketItem);
-
-                return $basket;
-            });
+            return $this->em->wrapInTransaction(
+                fn(): Basket => $this->getOrCreateBasketWithLockedOwner($user),
+            );
+            // открываем транзакцию и вызываем хелпер, который умеет безопасно создать корзину
         } catch (RetryableException $e) {
             throw new ConflictHttpException(
                 'Корзина сейчас обновляется. Повторите запрос.',
                 $e,
             );
+            // если база словила конфликт параллельного запроса, отдаём понятную ошибку 409
         }
+    }
+
+    public function addItem(User $user, AddBasketItemRequest $dto): Basket
+    // метод добавляет товар в корзину
+    // AddBasketItemRequest хранит productId и quantity из запроса
+    {
+        try {
+            return $this->em->wrapInTransaction(
+                fn(): Basket => $this->addItemInTransaction($user, $dto),
+            );
+            // открываем транзакцию и передаём основную логику в отдельный метод
+        } catch (RetryableException $e) {
+            throw new ConflictHttpException(
+                'Корзина сейчас обновляется. Повторите запрос.',
+                $e,
+            );
+            // если база словила конфликт параллельного обновления, отдаём  409
+        }
+    }
+
+    private function addItemInTransaction(User $user, AddBasketItemRequest $dto): Basket
+    // содержит основную логику добавления товара внутри транзакции
+    {
+        $basket = $this->getOrCreateBasketWithLockedOwner($user);
+        // безопасно получаем или создаём корзину с lock по пользователю
+
+        $this->em->lock($basket, LockMode::PESSIMISTIC_WRITE);
+        // блокируем корзину на запись, чтобы параллельные запросы не меняли её одновременно
+
+        $product = $this->productRepository->getById($dto->productId);
+        // ищем товар по id из запроса
+
+        $allowedQuantity = $this->basketValidator->getAllowedQuantityToAdd(
+            $basket,
+            $product,
+            $dto->quantity,
+        );
+        // считаем, сколько товара реально можно добавить с учётом лимита категории
+
+        if ($allowedQuantity <= 0) {
+            return $basket;
+            // если лимит уже достигнут, ничего не добавляем
+        }
+
+        $basketItem = $this->basketItemRepository->findOneBy([
+            'basket' => $basket,
+            'product' => $product,
+        ]);
+        // проверяем, есть ли уже такой товар в этой корзине
+
+        if ($basketItem !== null) {
+            $newQuantity = $basketItem->getQuantity() + $allowedQuantity;
+            // если позиция уже есть, увеличиваем количество
+
+            $basketItem->setQuantity($newQuantity);
+            // сохраняем новое количество в объекте
+
+            $this->touchBasket($basket);
+            // обновляем дату изменения корзины
+
+            return $basket;
+        }
+
+        $basketItem = new BasketItem($basket, $product, $allowedQuantity);
+        // если такого товара ещё нет, создаём новую позицию корзины
+
+        $basket->addItem($basketItem);
+        // добавляем позицию в коллекцию корзины
+
+        $this->touchBasket($basket);
+        // обновляем дату изменения корзины
+
+        $this->em->persist($basketItem);
+        // говорим doctrine сохранить новую позицию
+
+        return $basket;
     }
 
     public function updateItemQuantity(
@@ -123,38 +127,45 @@ final readonly class BasketService
         UpdateBasketItemRequest $dto,
     ): Basket {
         try {
-            return $this->em->wrapInTransaction(function () use ($user, $itemId, $dto): Basket {
-                // получаем корзину текущего пользователя
-                // если корзины нет - 404
-                $basket = $this->getExistingBasket($user);
-
-                $this->em->lock($basket, LockMode::PESSIMISTIC_WRITE);
-                // блокируем корзину на запись внутри транзакции
-
-                // находим позицию корзины по айди т и сразу проверяем,
-                // что эта позиция принадлежит корзине текущего пользователя
-                $basketItem = $this->getBasketItem($basket, $itemId);
-
-                // проверяем, не превысит ли новое количество лимит категории
-                $this->basketValidator->assertCanUpdateItem($basketItem, $dto->quantity);
-
-                // записываем новое количество из дто
-                // дто уже проверил, что quantity — число больше 0
-                $basketItem->setQuantity($dto->quantity);
-
-                // обновляем дату изменения всей корзины,
-                // потому что её содержимое поменялось
-                $this->touchBasket($basket);
-
-                // Возвращаем обновлённую корзину
-                return $basket;
-            });
+            return $this->em->wrapInTransaction(
+                fn(): Basket => $this->updateItemQuantityInTransaction($user, $itemId, $dto),
+            ); // запускаем обновление количества внутри транзакции
         } catch (RetryableException $e) {
             throw new ConflictHttpException(
                 'Корзина сейчас обновляется. Повторите запрос.',
                 $e,
-            );
+            ); // если база словила конфликт параллельного обновления, отдаём 409
         }
+    }
+
+    private function updateItemQuantityInTransaction(
+        User $user,
+        int $itemId,
+        UpdateBasketItemRequest $dto,
+    ): Basket {
+        $basket = $this->getExistingBasket($user);
+        // получаем существующую корзину пользователя
+        // если корзины нет, будет 404
+
+        $this->em->lock($basket, LockMode::PESSIMISTIC_WRITE);
+        // блокируем корзину на запись внутри транзакции
+        // второй параллельный запрос будет ждать
+
+        $basketItem = $this->getBasketItem($basket, $itemId);
+        // ищем позицию корзины по id
+        // внутри метода ещё проверяется, что позиция принадлежит этой корзине
+
+        $this->basketValidator->assertCanUpdateItem($basketItem, $dto->quantity);
+        // проверяем, не превысит ли новое количество лимит категории
+
+        $basketItem->setQuantity($dto->quantity);
+        // записываем новое количество из запроса
+
+        $this->touchBasket($basket);
+        // обновляем дату изменения корзины
+
+        return $basket;
+        // возвращаем обновлённую корзину
     }
 
     public function removeItem(User $user, int $itemId): Basket
@@ -247,6 +258,36 @@ final readonly class BasketService
         }
 
         // Если корзина есть, возвращаем её.
+        return $basket;
+    }
+
+    private function getOrCreateBasketWithLockedOwner(User $user): Basket
+    // безопасно ищет или создаёт корзину внутри транзакции
+    {
+        $basket = $this->basketRepository->findOneBy([
+            'owner' => $user,
+        ]); // сначала пробуем найти корзину без блокировки
+
+        if ($basket !== null) {
+            return $basket; // если корзина уже есть, просто возвращаем её
+        }
+
+        $this->em->lock($user, LockMode::PESSIMISTIC_WRITE);
+        // блокируем строку пользователя, чтобы второй параллельный запрос подождал
+
+        $basket = $this->basketRepository->findOneBy([
+            'owner' => $user,
+        ]); // после блокировки проверяем ещё раз
+
+        if ($basket !== null) {
+            return $basket; // другой запрос мог создать корзину, пока мы ждали lock
+        }
+
+        $basket = new Basket($user); // корзины всё ещё нет, значит создаём новую
+
+        $this->em->persist($basket); // говорим doctrine сохранить корзину
+        $this->em->flush();
+
         return $basket;
     }
 }

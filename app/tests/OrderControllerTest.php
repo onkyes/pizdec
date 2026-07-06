@@ -47,6 +47,7 @@ final class OrderControllerTest extends WebTestCase
             [],
             $headers,
             json_encode([
+                'deliveryType' => 'courier', // курьерская доставка, поэтому адрес обязателен
                 'deliveryRegion' => 'Московская область',
                 'deliveryCity' => 'Москва',
                 'deliveryStreet' => 'Ленина',
@@ -108,6 +109,7 @@ final class OrderControllerTest extends WebTestCase
             [],
             $headers,
             json_encode([
+                'deliveryType' => 'courier', // курьерская доставка, адрес обязателен
                 'deliveryRegion' => 'Московская область',
                 'deliveryCity' => 'Москва',
                 'deliveryStreet' => 'Ленина',
@@ -156,6 +158,7 @@ final class OrderControllerTest extends WebTestCase
             [],
             $headers,
             json_encode([
+                'deliveryType' => 'courier', // курьерская доставка, адрес обязателен
                 'deliveryRegion' => 'Московская область',
                 'deliveryCity' => 'Москва',
                 'deliveryStreet' => 'Ленина',
@@ -204,6 +207,7 @@ final class OrderControllerTest extends WebTestCase
             [],
             $headers,
             json_encode([
+                'deliveryType' => 'courier', // курьерская доставка, адрес обязателен
                 'deliveryRegion' => 'Московская область',
                 'deliveryCity' => 'Москва',
                 'deliveryStreet' => 'Ленина',
@@ -234,5 +238,65 @@ final class OrderControllerTest extends WebTestCase
         self::assertSame($createdOrder['id'], $data[0]['id']); // проверяем, что вернулся созданный заказ
         self::assertSame('created', $data[0]['status']); // проверяем статус заказа
         self::assertSame(100, $data[0]['total']); // проверяем сумму заказа
+    }
+
+    public function testCreatePickupOrderSucceedsWithoutAddress(): void
+    // проверяет, что заказ самовывозом можно создать без адреса доставки
+    {
+        $client = self::createClient(); // создаём тестовый http-клиент
+
+        $headers = $this->authHeaders($client, 'ROLE_USER'); // создаём юзера и получаем токен
+
+        $product = $this->createProduct(
+            category: 'food',
+            price: 100,
+            weight: 500,
+            name: 'Пицца',
+        ); // создаём товар, который положим в корзину
+
+        $client->request(
+            'POST',
+            '/api/basket/items',
+            [],
+            [],
+            $headers,
+            json_encode([
+                'productId' => $product->getId(),
+                'quantity' => 1,
+            ], JSON_THROW_ON_ERROR),
+        ); // добавляем товар в корзину
+
+        self::assertResponseStatusCodeSame(Response::HTTP_OK); // проверяем, что товар добавился
+
+        $client->request(
+            'POST',
+            '/api/orders',
+            [],
+            [],
+            $headers,
+            json_encode([
+                'deliveryType' => 'pickup',
+            ], JSON_THROW_ON_ERROR),
+        ); // создаём заказ самовывозом без адреса
+
+        self::assertResponseStatusCodeSame(Response::HTTP_CREATED); // проверяем, что заказ создан
+
+        $data = $this->decodeResponse($client); // декодируем json ответ в массив
+
+        self::assertSame('pickup', $data['deliveryType']); // проверяем тип получения заказа
+        self::assertSame('created', $data['status']); // проверяем стартовый статус заказа
+        self::assertSame(100, $data['total']); // проверяем сумму заказа
+
+        self::assertNull($data['deliveryAddress']['region']); // при самовывозе область не нужна
+        self::assertNull($data['deliveryAddress']['city']); // город не нужен
+        self::assertNull($data['deliveryAddress']['street']); // улица не нужна
+        self::assertNull($data['deliveryAddress']['house']); // дом не нужен
+        self::assertNull($data['deliveryAddress']['entrance']); // подъезд не нужен
+        self::assertNull($data['deliveryAddress']['apartment']); // квартира не нужна
+        self::assertNull($data['deliveryAddress']['postalCode']); // индекс не нужен
+
+        self::assertCount(1, $data['items']); // проверяем, что товар попал в заказ
+        self::assertSame($product->getId(), $data['items'][0]['productId']); // проверяем id товара
+        self::assertSame(1, $data['items'][0]['quantity']); // проверяем количество
     }
 }

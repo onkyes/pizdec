@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dto;
 
+use App\Enum\ProductCategory;
 use Symfony\Component\Validator\Constraints as Assert;
 
 final readonly class UpdateProductRequest
@@ -27,7 +28,7 @@ final readonly class UpdateProductRequest
     #[Assert\Type('string')]
     #[Assert\NotBlank(message: 'Категория не может быть пустой', allowNull: true)]
     #[Assert\Choice(
-        choices: ['food', 'drink'],
+        callback: [ProductCategory::class, 'values'], // продуктКатегори-енам
         message: 'Категория должна быть food или drink',
     )]
     public ?string $category;

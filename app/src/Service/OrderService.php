@@ -10,9 +10,14 @@ use App\Entity\BasketItem;
 use App\Entity\BuyerOrder;
 use App\Entity\BuyerOrderItem;
 use App\Entity\User;
+use App\Enum\DeliveryType;
+use App\Enum\OrderStatus;
 use App\Repository\BasketRepository;
 use App\Repository\BuyerOrderRepository;
+use Doctrine\DBAL\Exception\RetryableException;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final readonly class OrderService
@@ -25,67 +30,21 @@ final readonly class OrderService
     ) {}
 
     public function createOrder(User $user, CreateOrderRequest $dto): BuyerOrder
-    // оформляет заказ корзины
+    // оформляет заказ из корзины пользователя
     {
-        // Ищем корзину текущего пользователя в базе.
-        $basket = $this->basketRepository->findOneBy([
-            'owner' => $user,
-        ]);
-
-        // Если корзины нет, отдаём 404.
-        // Для update/delete не надо создавать новую пустую корзину.
-        if ($basket === null) {
-            throw new NotFoundHttpException('Корзина не найдена');
-        }
-
-        $this->basketValidator->assertBasketIsNotEmpty($basket);
-
-        $total = $this->calculateBasketTotal($basket);
-
-        $order = new BuyerOrder(
-            $user,
-            BuyerOrder::STATUS_CREATED,
-            $total,
-            $dto->deliveryRegion,
-            $dto->deliveryCity,
-            $dto->deliveryStreet,
-            $dto->deliveryHouse,
-            $dto->deliveryPostalCode,
-            $dto->deliveryEntrance,
-            $dto->deliveryApartment,
-        );
-
-        $this->em->persist($order);
-
-        foreach ($basket->getItems() as $basketItem) {
-            $product = $basketItem->getProduct();
-
-            $lineTotal = $this->calculateLineTotal($basketItem);
-
-            $orderItem = new BuyerOrderItem(
-                $order,
-                $product->getId(),
-                $product->getName(),
-                $product->getPrice(),
-                $product->getWeight(),
-                $product->getCategory(),
-                $basketItem->getQuantity(),
-                $lineTotal,
+        try {
+            return $this->em->wrapInTransaction(
+                fn(): BuyerOrder => $this->createOrderInTransaction($user, $dto),
             );
-
-            $order->addItem($orderItem);
-
-            $this->em->persist($orderItem);
+            // открываем транзакцию и передаём основную логику создания заказа в отдельный метод
+        } catch (RetryableException $e) {
+            // ловим конфликт конкурентного обновления, если база не смогла безопасно выполнить операцию
+            throw new ConflictHttpException(
+                'Корзина сейчас обновляется. Повторите запрос.',
+                $e,
+            );
+            // отдаём понятную ошибку 409 вместо неожиданной ошибки базы
         }
-
-        foreach ($basket->getItems() as $basketItem) {
-            $basket->removeItem($basketItem);
-            $this->em->remove($basketItem);
-        }
-
-        $this->em->flush();
-
-        return $order;
     }
 
     /**
@@ -114,6 +73,89 @@ final readonly class OrderService
         }
 
         return $order;
+    }
+
+    private function createOrderInTransaction(User $user, CreateOrderRequest $dto): BuyerOrder
+    // создаёт заказ внутри транзакции
+    {
+        $basket = $this->basketRepository->findOneBy([
+            'owner' => $user,
+        ]);
+        // ищем корзину текущего пользователя в базе
+
+        if ($basket === null) {
+            throw new NotFoundHttpException('Корзина не найдена');
+        }
+        // если корзины нет, заказ создать нельзя
+
+        $this->em->lock($basket, LockMode::PESSIMISTIC_WRITE);
+        // блокируем корзину на запись, пока создаём из неё заказ
+
+        $this->basketValidator->assertBasketIsNotEmpty($basket);
+        // проверяем, что корзина не пустая
+
+        $basketItems = $basket->getItems()->toArray();
+        // сохраняем список товаров из корзины в отдельный массив
+
+        $total = $this->calculateBasketTotal($basket);
+        // считаем общую сумму заказа по товарам в корзине
+
+        $order = new BuyerOrder(
+            $user, // пользователь, который оформляет заказ
+            OrderStatus::Created, // новый заказ всегда создаётся со статусом created
+            $total, // итоговая сумма заказа, которую посчитали по корзине
+            DeliveryType::from($dto->deliveryType), // доставка?
+            $dto->deliveryRegion, // область доставки из запроса
+            $dto->deliveryCity, // город доставки из запроса
+            $dto->deliveryStreet, // улица доставки из запроса
+            $dto->deliveryHouse, // дом доставки из запроса
+            $dto->deliveryPostalCode, // индекс доставки из запроса
+            $dto->deliveryEntrance, // подъезд, может быть null
+            $dto->deliveryApartment, // квартира, может быть null
+        );
+
+        $this->em->persist($order);
+        // говорим doctrine, что новый заказ нужно сохранить в базу
+
+        foreach ($basketItems as $basketItem) {
+            // проходим по товарам, которые лежали в корзине на момент создания заказа
+
+            $product = $basketItem->getProduct();
+            // достаём продукт из позиции корзины
+
+            $lineTotal = $this->calculateLineTotal($basketItem);
+            // считаем сумму одной строки заказа: цена товара * количество
+
+            $orderItem = new BuyerOrderItem(
+                $order, // заказ, к которому относится эта строка
+                $product->getId(), // сохраняем id товара на момент заказа
+                $product->getName(), // сохраняем название товара на момент заказа
+                $product->getPrice(), // сохраняем цену товара на момент заказа
+                $product->getWeight(), // сохраняем вес товара на момент заказа
+                $product->getCategory(), // сохраняем категорию товара на момент заказа
+                $basketItem->getQuantity(), // сохраняем количество из корзины
+                $lineTotal, // сохраняем сумму строки
+            );
+
+            $order->addItem($orderItem);
+            // добавляем строку заказа в коллекцию заказа
+
+            $this->em->persist($orderItem);
+            // говорим doctrine, что строку заказа тоже нужно сохранить
+        }
+
+        foreach ($basketItems as $basketItem) {
+            // после создания заказа очищаем корзину от тех товаров, которые ушли в заказ
+
+            $basket->removeItem($basketItem);
+            // убираем позицию из коллекции корзины
+
+            $this->em->remove($basketItem);
+            // говорим doctrine удалить эту позицию корзины из базы
+        }
+
+        return $order;
+        // возвращает созданный заказ
     }
 
     private function calculateLineTotal(BasketItem $basketItem): int

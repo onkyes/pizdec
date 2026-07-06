@@ -87,14 +87,15 @@ final class OrderController extends AbstractController
      *     id: int,
      *     status: string,
      *     total: int,
+     *     deliveryType: string,
      *     deliveryAddress: array{
-     *         region: string,
-     *         city: string,
-     *         street: string,
-     *         house: string,
-     *         entrance: string|null,
-     *         apartment: string|null,
-     *         postalCode: string
+     *         region: string|null,
+     *          city: string|null,
+     *          street: string|null,
+     *          house: string|null,
+     *          entrance: string|null,
+     *          apartment: string|null,
+     *          postalCode: string|null
      *     },
      *     items: list<array{
      *         id: int,
@@ -116,21 +117,22 @@ final class OrderController extends AbstractController
 
         foreach ($order->getItems() as $item) {
             $items[] = [
-                'id' => $item->getId(),
-                'productId' => $item->getProductId(),
-                'productName' => $item->getProductName(),
-                'productPrice' => $item->getProductPrice(),
-                'productWeight' => $item->getProductWeight(),
-                'productCategory' => $item->getProductCategory(),
-                'quantity' => $item->getQuantity(),
-                'lineTotal' => $item->getLineTotal(),
+                'id' => $item->getId(), // id строки заказа
+                'productId' => $item->getProductId(), // id товара на момент заказа
+                'productName' => $item->getProductName(), // название товара на момент заказа
+                'productPrice' => $item->getProductPrice(), // цена товара на момент заказа
+                'productWeight' => $item->getProductWeight(), // вес товара на момент заказа
+                'productCategory' => $item->getProductCategory(), // категория товара на момент заказа
+                'quantity' => $item->getQuantity(), // количество товара в заказе
+                'lineTotal' => $item->getLineTotal(), // сумма строки заказа
             ];
         }
 
         return [
             'id' => $order->getId(),
-            'status' => $order->getStatus(),
+            'status' => $order->getStatus()->value,
             'total' => $order->getTotal(),
+            'deliveryType' => $order->getDeliveryType()->value, // способ получения заказа: pickup или courier
             'deliveryAddress' => [
                 'region' => $order->getDeliveryRegion(),
                 'city' => $order->getDeliveryCity(),

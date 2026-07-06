@@ -7,15 +7,11 @@ namespace App\Service;
 use App\Entity\Basket;
 use App\Entity\BasketItem;
 use App\Entity\Product;
+use App\Enum\ProductCategory;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 final readonly class BasketValidator
 {
-    private const MAX_FOOD_COUNT = 10;
-    private const MAX_DRINK_COUNT = 20;
-    private const FOOD_CATEGORY = 'food';
-    private const DRINK_CATEGORY = 'drink';
-
     public function getAllowedQuantityToAdd(
         Basket $basket,
         Product $product,
@@ -94,8 +90,8 @@ final readonly class BasketValidator
     private function getMaxCountForCategory(string $category): int
     {
         return match ($category) {
-            self::FOOD_CATEGORY => self::MAX_FOOD_COUNT,
-            self::DRINK_CATEGORY => self::MAX_DRINK_COUNT,
+            ProductCategory::Food->value => Basket::MAX_FOOD_COUNT,
+            ProductCategory::Drink->value => Basket::MAX_DRINK_COUNT,
             default => throw new UnprocessableEntityHttpException('Неизвестная категория товара'),
         };
     }
