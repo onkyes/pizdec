@@ -80,7 +80,7 @@ final class ProductControllerTest extends WebTestCase
                 'description' => 'Created description',
                 'price' => 250,
                 'weight' => 750,
-                'category' => 'created',
+                'category' => 'food',
             ], JSON_THROW_ON_ERROR), // сборка тела запроса
         );
 
@@ -93,7 +93,7 @@ final class ProductControllerTest extends WebTestCase
         self::assertSame('Created description', $data['description']); // описание
         self::assertSame(250, $data['price']); // цена
         self::assertSame(750, $data['weight']); // масса
-        self::assertSame('created', $data['category']); // категория
+        self::assertSame('food', $data['category']); // категория
     }
 
     public function testCreateProductError(): void
@@ -113,7 +113,7 @@ final class ProductControllerTest extends WebTestCase
                 'description' => 'Created description',
                 'price' => 250,
                 'weight' => 750,
-                'category' => 'created',
+                'category' => 'food',
             ], JSON_THROW_ON_ERROR), // отправляем невалидные данные (нет name)
         );
 
@@ -149,7 +149,7 @@ final class ProductControllerTest extends WebTestCase
         self::assertSame('Тестовое описание', $data['description']); // description НЕ изменился
         self::assertSame(300, $data['price']); // price изменился
         self::assertSame(500, $data['weight']); // weight НЕ изменился
-        self::assertSame('test', $data['category']); // category НЕ изменилась
+        self::assertSame('food', $data['category']); // category НЕ изменилась
     }
 
     public function testUpdateProductError(): void
