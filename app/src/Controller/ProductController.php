@@ -9,7 +9,7 @@ use App\Dto\PaginationRequest;
 use App\Dto\UpdateProductRequest;
 use App\Entity\Product;
 use App\Repository\ProductRepository;
-use App\Service\ProductListCacheService;
+use App\Service\ProductListProviderInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -24,9 +24,9 @@ final class ProductController extends AbstractController
     public function list(
         #[MapQueryString]
         PaginationRequest $pagination,
-        ProductListCacheService $productListCacheService,
+        ProductListProviderInterface $productListProvider,
     ): JsonResponse {
-        $data = $productListCacheService->getProductList($pagination);
+        $data = $productListProvider->getProductList($pagination);
 
         return $this->json($data, Response::HTTP_OK);
 
