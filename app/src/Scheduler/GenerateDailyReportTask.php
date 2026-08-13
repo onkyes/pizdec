@@ -13,7 +13,7 @@ use Symfony\Component\Scheduler\Attribute\AsCronTask;
 #[AsCronTask('0 2 * * *', timezone: 'Europe/Moscow')] // каждый день в 02:00
 final readonly class GenerateDailyReportTask // задача ежедневного отчёта
 {
-    public function __construct( // зависимости задачи
+    public function __construct(// зависимости задачи
         private EntityManagerInterface $em, // сохраняем отчёт в бд
         private MessageBusInterface $messageBus, // отправляем задачу в messenger
     ) {}

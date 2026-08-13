@@ -10,22 +10,23 @@ use App\Enum\ReportStatus;
 use App\Message\GenerateReportMessage;
 use App\Repository\ReportRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use League\Flysystem\FilesystemException;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 #[IsGranted('ROLE_ADMIN')] // пускаем только админа
 final class ReportController extends AbstractController // отчёты
 {
     #[Route('/api/reports', name: 'report_create', methods: ['POST'])] // POST /api/reports
-    public function create( // метод создания отчёта
+    public function create(// метод создания отчёта
         #[MapRequestPayload] // берём данные из json
         CreateReportRequest $dto, // dto с периодом отчёта
         EntityManagerInterface $em, // entity manager для сохранения
@@ -55,7 +56,7 @@ final class ReportController extends AbstractController // отчёты
     }
 
     #[Route('/api/reports/{id}', name: 'report_show', requirements: ['id' => '\d+'], methods: ['GET'])] // GET /api/reports/1
-    public function show( // метод показа отчёта
+    public function show(// метод показа отчёта
         int $id, // id отчёта из url
         ReportRepository $reportRepository, // репозиторий отчётов
     ): JsonResponse { // возвращаем json
@@ -75,7 +76,7 @@ final class ReportController extends AbstractController // отчёты
     }
 
     #[Route('/api/reports/{id}/download', name: 'report_download', requirements: ['id' => '\d+'], methods: ['GET'])] // GET /api/reports/1/download
-    public function download( // метод скачивания отчёта
+    public function download(// метод скачивания отчёта
         int $id, // id отчёта из url
         ReportRepository $reportRepository, // репозиторий отчётов
         #[Autowire(service: 'reports.storage')] // берём storage для отчётов
@@ -97,12 +98,12 @@ final class ReportController extends AbstractController // отчёты
             );
         }
 
-        $stream = $reportsStorage->readStream($report->getFilePath()); // читаем файл из MinIO
-
-        if ($stream === false) { // если файл не смогли открыть
-            return $this->json( // возвращаем json с ошибкой
-                ['message' => 'Файл отчёта не найден'], // текст ошибки
-                Response::HTTP_NOT_FOUND, // код 404
+        try {
+            $stream = $reportsStorage->readStream($report->getFilePath());
+        } catch (FilesystemException) {
+            return $this->json(
+                ['message' => 'Файл отчёта не найден'],
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -119,6 +120,19 @@ final class ReportController extends AbstractController // отчёты
         );
     }
 
+    /**
+     * @return array{
+     *     id: int,
+     *     status: string,
+     *     periodFrom: string,
+     *     periodTo: string,
+     *     filePath: string|null,
+     *     errorMessage: string|null,
+     *     createdAt: string,
+     *     updatedAt: string,
+     *     completedAt: string|null
+     * }
+     */
     private function serializeReport(Report $report): array // собираем отчёт для json
     {
         return [ // массив ответа
@@ -131,7 +145,7 @@ final class ReportController extends AbstractController // отчёты
             'createdAt' => $report->getCreatedAt()->format(DATE_ATOM), // когда создали
             'updatedAt' => $report->getUpdatedAt()->format(DATE_ATOM), // когда обновили
             'completedAt' => $report->getCompletedAt()?->format(DATE_ATOM),
-            //^^ когда завершили, может быть null
+            // ^^ когда завершили, может быть null
         ];
     }
 }
