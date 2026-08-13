@@ -1,0 +1,14 @@
+flysystem:
+    storages:
+        reports.storage:
+            aws:
+                client: 'Aws\S3\S3Client'
+                bucket: '%env(MINIO_BUCKET)%'
+                prefix: ''
+
+when@test:
+    flysystem:
+        storages:
+            reports.storage:
+                local:
+                    directory: '%kernel.cache_dir%/reports'

@@ -1,0 +1,31 @@
+framework:
+    messenger:
+        transports:
+            reports_generate:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    exchange:
+                        name: reports.generate
+                        type: direct
+                    queues:
+                        reports.generate: ~
+
+            reports_completed:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    exchange:
+                        name: reports.completed
+                        type: direct
+                    queues:
+                        reports.completed: ~
+
+        routing:
+            App\Message\GenerateReportMessage: reports_generate
+            App\Message\ReportCompletedMessage: reports_completed
+
+when@test:
+    framework:
+        messenger:
+            transports:
+                reports_generate: 'in-memory://'
+                reports_completed: 'in-memory://'
