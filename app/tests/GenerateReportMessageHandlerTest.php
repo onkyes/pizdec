@@ -122,7 +122,8 @@ final class GenerateReportMessageHandlerTest extends KernelTestCase
         // читаем созданный jsonl-файл из test storage
 
         self::assertSame(
-            "{\"product_name\":\"Пицца\",\"price\":100,\"amount\":2,\"user\":{\"id\":{$user->getId()}}}\n",
+            "{\"product_name\":\"Пицца\",\"price\":100,\"user\":{\"id\":{$user->getId()}}}\n"
+            . "{\"product_name\":\"Пицца\",\"price\":100,\"user\":{\"id\":{$user->getId()}}}\n",
             $content,
         ); // проверяем содержимое jsonl
 

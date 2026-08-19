@@ -147,7 +147,8 @@ final class ReportControllerTest extends WebTestCase
 
         $reportsStorage->write(
             $filePath,
-            "{\"product_name\":\"Пицца\",\"price\":100,\"amount\":2,\"user\":{\"id\":1}}\n",
+            "{\"product_name\":\"Пицца\",\"price\":100,\"user\":{\"id\":1}}\n"
+            . "{\"product_name\":\"Пицца\",\"price\":100,\"user\":{\"id\":1}}\n",
         ); // кладём тестовый jsonl-файл в storage
 
         $em->persist($report); // готовим отчёт к сохранению
@@ -175,7 +176,8 @@ final class ReportControllerTest extends WebTestCase
         ); // проверяем, что файл отдаётся как attachment
 
         self::assertSame(
-            "{\"product_name\":\"Пицца\",\"price\":100,\"amount\":2,\"user\":{\"id\":1}}\n",
+            "{\"product_name\":\"Пицца\",\"price\":100,\"user\":{\"id\":1}}\n"
+            . "{\"product_name\":\"Пицца\",\"price\":100,\"user\":{\"id\":1}}\n",
             $client->getInternalResponse()->getContent(),
         ); // проверяем содержимое скачанного файла
     }

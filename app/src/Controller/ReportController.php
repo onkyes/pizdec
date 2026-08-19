@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Dto\CreateReportRequest;
+use App\Dto\ReportResponse;
 use App\Entity\Report;
 use App\Enum\ReportStatus;
 use App\Message\GenerateReportMessage;
@@ -50,7 +51,7 @@ final class ReportController extends AbstractController // отчёты
         $messageBus->dispatch(new GenerateReportMessage($report->getId())); // отправляем задачу в очередь
 
         return $this->json( // возвращаем ответ клиенту
-            $this->serializeReport($report), // превращаем отчёт в массив
+            ReportResponse::fromEntity($report), // превращаем отчёт в массив
             Response::HTTP_CREATED, // код 201
         );
     }
@@ -70,7 +71,7 @@ final class ReportController extends AbstractController // отчёты
         }
 
         return $this->json( // возвращаем json с отчётом
-            $this->serializeReport($report), // превращаем отчёт в массив
+            ReportResponse::fromEntity($report), // превращаем отчёт в массив
             Response::HTTP_OK, // код 200
         );
     }
@@ -118,34 +119,5 @@ final class ReportController extends AbstractController // отчёты
                 'Content-Disposition' => 'attachment; filename="' . basename($report->getFilePath()) . '"', // имя файла
             ],
         );
-    }
-
-    /**
-     * @return array{
-     *     id: int,
-     *     status: string,
-     *     periodFrom: string,
-     *     periodTo: string,
-     *     filePath: string|null,
-     *     errorMessage: string|null,
-     *     createdAt: string,
-     *     updatedAt: string,
-     *     completedAt: string|null
-     * }
-     */
-    private function serializeReport(Report $report): array // собираем отчёт для json
-    {
-        return [ // массив ответа
-            'id' => $report->getId(), // id отчёта
-            'status' => $report->getStatus()->value, // статус отчёта
-            'periodFrom' => $report->getPeriodFrom()->format(DATE_ATOM), // начало периода
-            'periodTo' => $report->getPeriodTo()->format(DATE_ATOM), // конец периода
-            'filePath' => $report->getFilePath(), // путь к файлу, если уже есть
-            'errorMessage' => $report->getErrorMessage(), // ошибка, если генерация упала
-            'createdAt' => $report->getCreatedAt()->format(DATE_ATOM), // когда создали
-            'updatedAt' => $report->getUpdatedAt()->format(DATE_ATOM), // когда обновили
-            'completedAt' => $report->getCompletedAt()?->format(DATE_ATOM),
-            // ^^ когда завершили, может быть null
-        ];
     }
 }

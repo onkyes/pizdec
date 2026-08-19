@@ -53,13 +53,14 @@ final readonly class ReportGeneratorService
                     $row = [
                         'product_name' => $soldItem->getProductName(),
                         'price' => $soldItem->getProductPrice(),
-                        'amount' => $soldItem->getQuantity(),
                         'user' => [
                             'id' => $user->getId(),
                         ],
                     ];
 
-                    fwrite($stream, json_encode($row, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) . "\n");
+                    for ($i = 0; $i < $soldItem->getQuantity(); ++$i) {
+                        fwrite($stream, json_encode($row, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) . "\n");
+                    }
                 }
 
                 rewind($stream);

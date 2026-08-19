@@ -21,7 +21,7 @@ final readonly class GenerateDailyReportTask // задача ежедневно�
     public function __invoke(): void // этот метод вызовет scheduler
     {
         $periodFrom = new \DateTimeImmutable('yesterday 00:00:00'); // начало вчерашнего дня
-        $periodTo = new \DateTimeImmutable('yesterday 23:59:59'); // конец вчерашнего дня
+        $periodTo = new \DateTimeImmutable('today 00:00:00'); // начало сегодняшнего дня
 
         $report = new Report($periodFrom, $periodTo); // создаём отчёт pending
 
