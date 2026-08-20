@@ -2,7 +2,17 @@ services:
   php:
     build:
       target: prod
-    volumes: []
+    volumes: !reset []
+
+  php-scheduler:
+    build:
+      target: prod
+    volumes: !reset []
+
+  php-reports-worker:
+    build:
+      target: prod
+    volumes: !reset []
 
   nginx:
     volumes:

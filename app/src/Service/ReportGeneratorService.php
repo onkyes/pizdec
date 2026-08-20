@@ -39,7 +39,7 @@ final readonly class ReportGeneratorService
                 $report->getPeriodTo(),
             );
 
-            $stream = fopen('php://temp/maxmemory:1048576', 'w+');
+            $stream = fopen('php://temp/maxmemory:1048576', 'w+b');
 
             if ($stream === false) {
                 throw new \RuntimeException('Failed to open temporary report stream.');
