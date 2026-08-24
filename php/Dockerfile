@@ -3,6 +3,7 @@ FROM php:8.4.5-fpm AS base
 WORKDIR /var/www/app
 
 COPY --from=mlocati/php-extension-installer:2.7.33 /usr/bin/install-php-extensions /usr/local/bin/
+COPY --from=composer:2.8.12 /usr/bin/composer /usr/local/bin/composer
 
 RUN apt-get update && apt-get install -y \
     git \
@@ -10,12 +11,12 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN install-php-extensions pdo_pgsql intl opcache
+RUN install-php-extensions pdo_pgsql intl opcache amqp
 
 COPY php/php.ini /usr/local/etc/php/conf.d/php.ini
 COPY php/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
 
-FROM composer:2.8.12 AS vendor_dev
+FROM base AS vendor_dev
 
 WORKDIR /app
 
@@ -23,7 +24,7 @@ COPY app/composer.json app/composer.lock ./
 RUN composer install --no-interaction --prefer-dist --no-scripts
 
 
-FROM composer:2.8.12 AS vendor_prod
+FROM base AS vendor_prod
 
 WORKDIR /app
 

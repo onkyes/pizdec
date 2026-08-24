@@ -2,11 +2,27 @@ services:
   php:
     build:
       target: prod
-    volumes: []
+    volumes: !reset []
+
+  php-scheduler:
+    build:
+      target: prod
+    volumes: !reset []
+
+  php-reports-worker:
+    build:
+      target: prod
+    volumes: !reset []
 
   nginx:
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
 
   db:
-    ports: []
+    ports: !reset [ ]
+
+  rabbitmq:
+    ports: !reset []
+
+  minio:
+    ports: !reset []
