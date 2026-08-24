@@ -4,34 +4,25 @@ declare(strict_types=1);
 
 namespace App\Tests;
 
+use App\Entity\OutboxMessage;
 use App\Entity\Report;
 use App\Message\GenerateReportMessage;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Messenger\Transport\InMemory\InMemoryTransport;
 
 final class ReportControllerTest extends WebTestCase
 {
     use TestHelper;
 
-    public function testCreateReportDispatchesGenerateMessage(): void
-    // проверяет, что админ может создать отчёт, а генерация уходит в очередь
+    public function testCreateReportCreatesOutboxMessage(): void
+    // проверяет, что админ может создать отчёт, а генерация уходит в outbox
     {
         $client = self::createClient(); // создаём тестовый http-клиент
-        $client->disableReboot(); // оставляем один kernel, чтобы видеть тот же in-memory transport
+        $client->disableReboot(); // оставляем один kernel для доступа к контейнеру после запроса
 
         $headers = $this->authHeaders($client, 'ROLE_ADMIN'); // логинимся админом
-
-        $transport = self::getContainer()->get('messenger.transport.reports_generate');
-        // достаём test transport для очереди reports_generate
-
-        self::assertInstanceOf(InMemoryTransport::class, $transport);
-        // проверяем, что в test окружении используется in-memory transport
-
-        $transport->reset();
-        // очищаем очередь перед тестом, чтобы не мешали сообщения из других тестов
 
         $client->request(
             'POST',
@@ -60,20 +51,34 @@ final class ReportControllerTest extends WebTestCase
         self::assertNull($data['filePath']);
         // файл ещё не создан
 
-        $sentMessages = $transport->getSent();
-        // смотрим сообщения, которые были отправлены в очередь
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        // достаём entity manager, чтобы проверить outbox-запись
 
-        self::assertCount(1, $sentMessages);
-        // должно уйти ровно одно сообщение на генерацию отчёта
+        $outboxMessages = $em->getRepository(OutboxMessage::class)->findBy([
+            'messageClass' => GenerateReportMessage::class,
+        ]);
+        // ищем outbox-сообщения для генерации отчётов
 
-        $message = $sentMessages[0]->getMessage();
-        // достаём само сообщение из envelope
+        $matchedOutboxMessages = array_values(array_filter(
+            $outboxMessages,
+            static fn(OutboxMessage $outboxMessage): bool => $outboxMessage->getPayload() === ['reportId' => $data['id']],
+        ));
+        // оставляем только outbox-запись для созданного отчёта
 
-        self::assertInstanceOf(GenerateReportMessage::class, $message);
-        // проверяем тип сообщения
+        self::assertCount(1, $matchedOutboxMessages);
+        // для созданного отчёта должна быть одна outbox-запись
 
-        self::assertSame($data['id'], $message->reportId);
-        // проверяем, что в очередь ушёл id именно созданного отчёта
+        $outboxMessage = $matchedOutboxMessages[0];
+        // достаём созданную outbox-запись
+
+        self::assertInstanceOf(OutboxMessage::class, $outboxMessage);
+        // проверяем тип записи
+
+        self::assertSame(['reportId' => $data['id']], $outboxMessage->getPayload());
+        // проверяем, что в payload лежит id созданного отчёта
+
+        self::assertNull($outboxMessage->getPublishedAt());
+        // сообщение ещё не отправлено в RabbitMQ
     }
 
     public function testShowReportReturnsReportStatus(): void

@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Entity\BuyerOrderItem;
 use App\Enum\OrderStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\AbstractQuery;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -20,14 +21,24 @@ final class BuyerOrderItemRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return iterable<BuyerOrderItem>
+     * @return iterable<array{
+     *     productName: string,
+     *     productPrice: int,
+     *     quantity: int,
+     *     userId: int
+     * }>
      */
     public function iterateSoldItemsForPeriod(
         \DateTimeImmutable $periodFrom,
         \DateTimeImmutable $periodTo,
     ): iterable {
         $queryBuilder = $this->createQueryBuilder('item')
-            ->addSelect('buyerOrder', 'owner')
+            ->select(
+                'item.productName AS productName',
+                'item.productPrice AS productPrice',
+                'item.quantity AS quantity',
+                'owner.id AS userId',
+            )
             ->innerJoin('item.buyerOrder', 'buyerOrder')
             ->innerJoin('buyerOrder.owner', 'owner')
             ->andWhere('buyerOrder.createdAt >= :periodFrom')
@@ -46,6 +57,6 @@ final class BuyerOrderItemRepository extends ServiceEntityRepository
 
         return $queryBuilder
             ->getQuery()
-            ->toIterable();
+            ->toIterable([], AbstractQuery::HYDRATE_ARRAY);
     }
 }

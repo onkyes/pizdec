@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\OutboxMessage;
 use App\Message\ReportCompletedMessage;
 use App\Repository\BuyerOrderItemRepository;
 use App\Repository\ReportRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Component\Messenger\MessageBusInterface;
 
 final readonly class ReportGeneratorService
 {
@@ -20,7 +20,6 @@ final readonly class ReportGeneratorService
         #[Autowire(service: 'reports.storage')]
         private FilesystemOperator $reportsStorage,
         private EntityManagerInterface $em,
-        private MessageBusInterface $messageBus,
     ) {}
 
     public function generate(int $reportId): void
@@ -47,19 +46,26 @@ final readonly class ReportGeneratorService
 
             try {
                 foreach ($soldItems as $soldItem) {
-                    $order = $soldItem->getBuyerOrder();
-                    $user = $order->getOwner();
-
                     $row = [
-                        'product_name' => $soldItem->getProductName(),
-                        'price' => $soldItem->getProductPrice(),
+                        'product_name' => $soldItem['productName'],
+                        'price' => $soldItem['productPrice'],
                         'user' => [
-                            'id' => $user->getId(),
+                            'id' => $soldItem['userId'],
                         ],
                     ];
 
-                    for ($i = 0; $i < $soldItem->getQuantity(); ++$i) {
-                        fwrite($stream, json_encode($row, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) . "\n");
+                    $line = json_encode($row, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) . "\n";
+                    // готовим одну джейсонЛ-строку для товара
+
+                    for ($i = 0; $i < $soldItem['quantity']; ++$i) {
+                        // пишем строку столько раз, сколько единиц товара купили
+                        $writtenBytes = fwrite($stream, $line);
+                        // fwrite вернёт количество записанных байт или false, если запись не удалась
+
+                        if ($writtenBytes === false || $writtenBytes !== \strlen($line)) {
+                            throw new \RuntimeException('Failed to write report row.');
+                            // если строка не записалась или записалась не полностью, валим генерацию отчёта
+                        }
                     }
                 }
 
@@ -74,7 +80,13 @@ final readonly class ReportGeneratorService
             $report->markCompleted($filePath);
             $this->em->flush();
 
-            $this->messageBus->dispatch(new ReportCompletedMessage($report->getId()));
+            $outboxMessage = OutboxMessage::create(
+                ReportCompletedMessage::class,
+                ['reportId' => $report->getId()],
+            );
+
+            $this->em->persist($outboxMessage);
+            $this->em->flush();
 
         } catch (\Throwable $e) {
             $report->markFailed($e->getMessage());
