@@ -6,6 +6,7 @@ namespace App\Tests;
 
 use App\Entity\BuyerOrder;
 use App\Entity\BuyerOrderItem;
+use App\Entity\OutboxMessage;
 use App\Entity\Report;
 use App\Entity\User;
 use App\Enum\DeliveryType;
@@ -127,20 +128,17 @@ final class GenerateReportMessageHandlerTest extends KernelTestCase
             $content,
         ); // проверяем содержимое jsonl
 
-        $sentMessages = $completedTransport->getSent();
-        // смотрим completed-события
+        $outboxMessages = $em->getRepository(OutboxMessage::class)->findBy([
+            'messageClass' => ReportCompletedMessage::class,
+        ]);
 
-        self::assertCount(1, $sentMessages);
-        // после генерации должно уйти одно completed-сообщение
+        $matchedOutboxMessages = array_values(array_filter(
+            $outboxMessages,
+            static fn(OutboxMessage $outboxMessage): bool => $outboxMessage->getPayload() === ['reportId' => $report->getId()],
+        ));
 
-        $message = $sentMessages[0]->getMessage();
-        // достаём сообщение из envelope
-
-        self::assertInstanceOf(ReportCompletedMessage::class, $message);
-        // проверяем тип completed-события
-
-        self::assertSame($report->getId(), $message->reportId);
-        // проверяем id отчёта в completed-событии
+        self::assertCount(1, $matchedOutboxMessages);
+        self::assertNull($matchedOutboxMessages[0]->getPublishedAt());
     }
 
     public function testGenerateReportMarksReportFailedWhenStorageWriteFails(): void
