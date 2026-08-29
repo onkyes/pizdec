@@ -10,11 +10,11 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 final readonly class CreateOrderRequest
 {
-    #[Assert\NotBlank(message: 'Необходимо указать способ получения заказа')]
+    #[Assert\NotBlank(message: 'order.delivery_type.required')]
     #[Assert\Type('string')]
     #[Assert\Choice(
         callback: [DeliveryType::class, 'values'],
-        message: 'Способ получения заказа должен быть pickup или courier',
+        message: 'order.delivery_type.choice',
     )]
     public string $deliveryType;
 
@@ -39,7 +39,7 @@ final readonly class CreateOrderRequest
     #[Assert\Type('string')]
     #[Assert\Regex(
         pattern: '/^\d{6}$/',
-        message: 'Индекс должен состоять из 6 цифр',
+        message: 'order.postal_code.regex',
     )]
     public ?string $deliveryPostalCode;
 
@@ -73,11 +73,11 @@ final readonly class CreateOrderRequest
         }
 
         // для курьерской доставки проверяем обязательные поля адреса
-        $this->requireCourierField($context, 'deliveryRegion', $this->deliveryRegion, 'Необходимо указать область');
-        $this->requireCourierField($context, 'deliveryCity', $this->deliveryCity, 'Необходимо указать город');
-        $this->requireCourierField($context, 'deliveryStreet', $this->deliveryStreet, 'Необходимо указать улицу');
-        $this->requireCourierField($context, 'deliveryHouse', $this->deliveryHouse, 'Необходимо указать дом или строение');
-        $this->requireCourierField($context, 'deliveryPostalCode', $this->deliveryPostalCode, 'Необходимо указать почтовый индекс');
+        $this->requireCourierField($context, 'deliveryRegion', $this->deliveryRegion, 'order.delivery_region.required');
+        $this->requireCourierField($context, 'deliveryCity', $this->deliveryCity, 'order.delivery_city.required');
+        $this->requireCourierField($context, 'deliveryStreet', $this->deliveryStreet, 'order.delivery_street.required');
+        $this->requireCourierField($context, 'deliveryHouse', $this->deliveryHouse, 'order.delivery_house.required');
+        $this->requireCourierField($context, 'deliveryPostalCode', $this->deliveryPostalCode, 'order.delivery_postal_code.required');
     }
 
     private function trimNullable(?string $value): ?string

@@ -27,6 +27,7 @@
         "symfony/scheduler": "8.0.*",
         "symfony/security-bundle": "8.0.*",
         "symfony/serializer": "8.0.*",
+        "symfony/translation": "8.0.*",
         "symfony/validator": "8.0.*",
         "symfony/yaml": "8.0.*"
     },

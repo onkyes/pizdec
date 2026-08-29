@@ -1,0 +1,6 @@
+# В тестах используем spy-логгер вместо настоящего логгера.
+services:
+    App\Tests\Logger\InMemoryLogger:
+        public: true
+
+    Psr\Log\LoggerInterface: '@App\Tests\Logger\InMemoryLogger'
