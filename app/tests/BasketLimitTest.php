@@ -199,11 +199,13 @@ final class BasketLimitTest extends WebTestCase
     }
 
     public function testUpdateRejectsQuantityOverCategoryLimit(): void
-    // проверяет, что через patch нельзя поставить quantity выше лимита категории
+// проверяет, что через patch нельзя поставить quantity выше лимита категории
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
         $headers = $this->authHeaders($client, 'ROLE_USER'); // создаём юзера и получаем токен
+
+        $headers['HTTP_ACCEPT_LANGUAGE'] = 'ru'; // просим вернуть ошибку на русском языке
 
         $product = $this->createProduct(
             category: 'food',
@@ -224,11 +226,14 @@ final class BasketLimitTest extends WebTestCase
             ], JSON_THROW_ON_ERROR),
         ); // сначала кладём в корзину 10 food, это максимум
 
-        self::assertResponseStatusCodeSame(Response::HTTP_OK); // проверяем, что товар добавился
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+        // проверяем, что товар добавился
 
-        $data = $this->decodeResponse($client); // декодируем ответ корзины
+        $data = $this->decodeResponse($client);
+        // декодируем успешный ответ корзины
 
-        $basketItemId = $data['items'][0]['id']; // достаём id позиции корзины
+        $basketItemId = $data['items'][0]['id'];
+        // достаём id позиции корзины
 
         $client->request(
             'PATCH',
@@ -241,6 +246,16 @@ final class BasketLimitTest extends WebTestCase
             ], JSON_THROW_ON_ERROR),
         ); // пробуем руками поставить quantity выше лимита food
 
-        self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY); // ждём 422, потому что лимит нарушен
+        self::assertResponseStatusCodeSame(
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+        ); // ждём 422, потому что лимит нарушен
+
+        $data = $this->decodeResponse($client);
+        // декодируем уже ошибочный ответ после PATCH
+
+        self::assertSame(
+            'Для категории food разрешено максимум 10 товаров',
+            $data['message'],
+        ); // проверяем, что параметры food и 10 подставились в перевод
     }
 }

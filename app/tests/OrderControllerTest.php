@@ -123,6 +123,40 @@ final class OrderControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY); // ждём 422, потому что корзина пустая
     }
 
+    public function testCreateOrderRejectsMissingBasket(): void
+// проверяет, что нельзя создать заказ, если у пользователя нет корзины
+    {
+        $client = self::createClient(); // создаём тестовый http-клиент
+
+        $headers = $this->authHeaders($client, 'ROLE_USER');
+        // создаём пользователя и получаем токен, но корзину не создаём
+
+        $headers['HTTP_ACCEPT_LANGUAGE'] = 'ru';
+        // просим вернуть ошибку на русском языке
+
+        $client->request(
+            'POST',
+            '/api/orders',
+            [],
+            [],
+            $headers,
+            json_encode([
+                'deliveryType' => 'pickup',
+            ], JSON_THROW_ON_ERROR),
+        ); // пытаемся создать заказ без корзины
+
+        self::assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
+        // ожидаем 404, потому что корзины нет
+
+        $data = $this->decodeResponse($client);
+        // декодируем ответ с ошибкой
+
+        self::assertSame(
+            'Корзина не найдена',
+            $data['message'],
+        ); // проверяем, что говорится о корзине, а не о заказе
+    }
+
     public function testCreateOrderRejectsInvalidAddress(): void
     // проверяет, что заказ нельзя создать с невалидным адресом доставки
     {

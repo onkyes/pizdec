@@ -11,7 +11,7 @@ use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-#[AsEventListener(event: KernelEvents::EXCEPTION)]
+#[AsEventListener(event: KernelEvents::EXCEPTION, priority: 10)]
 final readonly class TranslatableExceptionListener
 {
     public function __construct(
@@ -26,6 +26,7 @@ final readonly class TranslatableExceptionListener
         }
         $message = $this->translator->trans(
             $exception->getTranslationKey(),
+            $exception->getTranslationParameters(),
             locale: $event->getRequest()->getLocale(),
         );
 

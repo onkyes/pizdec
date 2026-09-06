@@ -64,6 +64,10 @@ final readonly class BasketValidator
             throw new TranslatableHttpException(
                 'basket.category_limit_exceeded',
                 Response::HTTP_UNPROCESSABLE_ENTITY,
+                [
+                    '%category%' => $category,
+                    '%limit%' => $maxCategoryCount,
+                ],
             );
         }
     }

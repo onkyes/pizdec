@@ -91,7 +91,7 @@ final readonly class OrderService
 
         if ($basket === null) {
             throw new TranslatableHttpException(
-                'order.not_found',
+                'basket.not_found',
                 Response::HTTP_NOT_FOUND,
             );
         }

@@ -6,10 +6,14 @@ namespace App\Exception;
 
 final class TranslatableHttpException extends \RuntimeException
 {
+    /**
+     * @param array<string, string|int|float> $translationParameters
+     */
     public function __construct(
         private readonly string $translationKey,
         private readonly int $statusCode,
-    ) {
+        private readonly array $translationParameters = [])
+    {
         parent::__construct($translationKey);
     }
 
@@ -21,5 +25,13 @@ final class TranslatableHttpException extends \RuntimeException
     public function getStatusCode(): int
     {
         return $this->statusCode;
+    }
+
+    /**
+     * @return array<string, string|int|float>
+     */
+    public function getTranslationParameters(): array
+    {
+        return $this->translationParameters;
     }
 }

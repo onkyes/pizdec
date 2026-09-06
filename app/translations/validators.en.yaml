@@ -22,3 +22,6 @@ order.delivery_city.required: 'City is required'
 order.delivery_street.required: 'Street is required'
 order.delivery_house.required: 'House is required'
 order.delivery_postal_code.required: 'Postal code is required'
+
+pagination.page.positive: 'Page must be greater than 0'
+pagination.limit.range: 'Limit must be between {{ min }} and {{ max }}'

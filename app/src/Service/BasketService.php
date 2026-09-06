@@ -227,7 +227,7 @@ final readonly class BasketService
         // Если позиции с таким id нет, отдаём 404
         if ($basketItem === null) {
             throw new TranslatableHttpException(
-                'basket.not_found',
+                'basket.item_not_found',
                 Response::HTTP_NOT_FOUND,
             );
         }
@@ -236,7 +236,7 @@ final readonly class BasketService
         // тоже отдаём 404, чтобы не раскрывать чужие данные
         if ($basketItem->getBasket() !== $basket) {
             throw new TranslatableHttpException(
-                'basket.not_found',
+                'basket.item_not_found',
                 Response::HTTP_NOT_FOUND,
             );
         }

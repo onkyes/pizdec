@@ -23,13 +23,13 @@ security:
                 username_path: email
                 password_path: password
                 success_handler: lexik_jwt_authentication.handler.authentication_success
-                failure_handler: lexik_jwt_authentication.handler.authentication_failure
-
+                failure_handler: App\Security\ApiSecurityFailureHandler
         api:
             pattern: ^/api
             stateless: true
+            entry_point: App\Security\ApiSecurityFailureHandler
+            access_denied_handler: App\Security\ApiSecurityFailureHandler
             jwt: ~
-
     access_control:
         - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
         - { path: ^/api/register, roles: PUBLIC_ACCESS, methods: [ POST ] }

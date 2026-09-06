@@ -22,3 +22,6 @@ order.delivery_city.required: 'Необходимо указать город'
 order.delivery_street.required: 'Необходимо указать улицу'
 order.delivery_house.required: 'Необходимо указать дом или строение'
 order.delivery_postal_code.required: 'Необходимо указать почтовый индекс'
+
+pagination.page.positive: 'Номер страницы должен быть больше 0'
+pagination.limit.range: 'Лимит должен быть от {{ min }} до {{ max }}'
