@@ -9,14 +9,14 @@ use App\Dto\UpdateBasketItemRequest;
 use App\Entity\Basket;
 use App\Entity\BasketItem;
 use App\Entity\User;
+use App\Exception\TranslatableHttpException;
 use App\Repository\BasketItemRepository;
 use App\Repository\BasketRepository;
 use App\Repository\ProductRepository;
 use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpFoundation\Response;
 
 final readonly class BasketService
 {
@@ -37,9 +37,9 @@ final readonly class BasketService
             );
             // открываем транзакцию и вызываем хелпер, который умеет безопасно создать корзину
         } catch (RetryableException $e) {
-            throw new ConflictHttpException(
-                'Корзина сейчас обновляется. Повторите запрос.',
-                $e,
+            throw new TranslatableHttpException(
+                'basket.locked',
+                Response::HTTP_CONFLICT,
             );
             // если база словила конфликт параллельного запроса, отдаём понятную ошибку 409
         }
@@ -55,9 +55,9 @@ final readonly class BasketService
             );
             // открываем транзакцию и передаём основную логику в отдельный метод
         } catch (RetryableException $e) {
-            throw new ConflictHttpException(
-                'Корзина сейчас обновляется. Повторите запрос.',
-                $e,
+            throw new TranslatableHttpException(
+                'basket.locked',
+                Response::HTTP_CONFLICT,
             );
             // если база словила конфликт параллельного обновления, отдаём  409
         }
@@ -131,9 +131,9 @@ final readonly class BasketService
                 fn(): Basket => $this->updateItemQuantityInTransaction($user, $itemId, $dto),
             ); // запускаем обновление количества внутри транзакции
         } catch (RetryableException $e) {
-            throw new ConflictHttpException(
-                'Корзина сейчас обновляется. Повторите запрос.',
-                $e,
+            throw new TranslatableHttpException(
+                'basket.locked',
+                Response::HTTP_CONFLICT,
             ); // если база словила конфликт параллельного обновления, отдаём 409
         }
     }
@@ -226,13 +226,19 @@ final readonly class BasketService
 
         // Если позиции с таким id нет, отдаём 404
         if ($basketItem === null) {
-            throw new NotFoundHttpException('Позиция корзины не найдена');
+            throw new TranslatableHttpException(
+                'basket.item_not_found',
+                Response::HTTP_NOT_FOUND,
+            );
         }
 
         // Если позиция есть, но она из чужой корзины,
         // тоже отдаём 404, чтобы не раскрывать чужие данные
         if ($basketItem->getBasket() !== $basket) {
-            throw new NotFoundHttpException('Позиция корзины не найдена');
+            throw new TranslatableHttpException(
+                'basket.item_not_found',
+                Response::HTTP_NOT_FOUND,
+            );
         }
 
         // Если всё хорошо, возвращаем найденную позицию
@@ -254,7 +260,10 @@ final readonly class BasketService
         // Если корзины нет, отдаём 404.
         // Для update/delete не надо создавать новую пустую корзину.
         if ($basket === null) {
-            throw new NotFoundHttpException('Корзина не найдена');
+            throw new TranslatableHttpException(
+                'basket.not_found',
+                Response::HTTP_NOT_FOUND,
+            );
         }
 
         // Если корзина есть, возвращаем её.

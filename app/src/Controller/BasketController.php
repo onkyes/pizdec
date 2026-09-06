@@ -8,12 +8,12 @@ use App\Dto\AddBasketItemRequest;
 use App\Dto\UpdateBasketItemRequest;
 use App\Entity\Basket;
 use App\Entity\User;
+use App\Exception\TranslatableHttpException;
 use App\Service\BasketService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
-use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
 final class BasketController extends AbstractController
@@ -151,7 +151,7 @@ final class BasketController extends AbstractController
 
         if (!$user instanceof User) {
             // если пользователя нет, значит запрос пришёл без нормального токена
-            throw new UnauthorizedHttpException('Bearer', 'Требуется авторизация');
+            throw new TranslatableHttpException('auth.required', Response::HTTP_UNAUTHORIZED);
         }
 
         return $user; // возвращаем User, чтобы дальше не проверять instanceof в каждом методе

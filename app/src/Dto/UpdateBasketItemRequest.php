@@ -9,9 +9,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 final readonly class UpdateBasketItemRequest
 {
     public function __construct(
-        #[Assert\NotNull(message: 'Количество обязательно')]
-        #[Assert\Type('integer', message: 'Количество должно быть целым числом')]
-        #[Assert\Positive(message: 'Количество должно быть больше 0')]
+        #[Assert\NotNull(message: 'basket.quantity.required')]
+        #[Assert\Type('integer', message: 'basket.quantity.integer')]
+        #[Assert\Positive(message: 'basket.quantity.positive')]
         public int $quantity,
     ) {}
 }

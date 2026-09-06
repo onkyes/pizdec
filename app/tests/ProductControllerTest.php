@@ -25,12 +25,47 @@ final class ProductControllerTest extends WebTestCase
 
     public function testListProductsError(): void
     {
-        $client = self::createClient(); // клиент
+        $client = self::createClient(); // создаём тестовый клиент
 
-        $client->request('GET', '/api/products?limit=100');
-        // отправляем запрос с невалидным limit
+        $client->request(
+            'GET',
+            '/api/products?page=0&limit=100',
+            [],
+            [],
+            [
+                'HTTP_ACCEPT' => 'application/json',
+                'HTTP_ACCEPT_LANGUAGE' => 'ru',
+            ],
+        );
+        // отправляем невалидные page и limit
+        // и просим вернуть ошибки на русском языке
 
         self::assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
+        // MapQueryString по умолчанию возвращает 404 при ошибке валидации
+
+        $data = $this->decodeResponse($client);
+        // декодируем JSON с ошибками валидации
+
+        $messagesByProperty = array_column(
+            $data['violations'],
+            'title',
+            'propertyPath',
+        );
+        // собираем сообщения в формате:
+        // page => сообщение
+        // limit => сообщение
+
+        self::assertSame(
+            'Номер страницы должен быть больше 0',
+            $messagesByProperty['page'],
+        );
+
+        self::assertSame(
+            'Лимит должен быть от 1 до 20',
+            $messagesByProperty['limit'],
+        );
+        // проверяем, что {{ min }} и {{ max }}
+        // заменились реальными значениями 1 и 20
     }
 
     public function testShowProductSuccess(): void
