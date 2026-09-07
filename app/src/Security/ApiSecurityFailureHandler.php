@@ -45,7 +45,7 @@ final readonly class ApiSecurityFailureHandler implements
     public function handle(
         Request $request,
         AccessDeniedException $accessDeniedException,
-    ): ?Response {
+    ): Response {
         return $this->createResponse(
             $request,
             'auth.forbidden',
