@@ -124,7 +124,7 @@ final class OrderControllerTest extends WebTestCase
     }
 
     public function testCreateOrderRejectsMissingBasket(): void
-// проверяет, что нельзя создать заказ, если у пользователя нет корзины
+    // проверяет, что нельзя создать заказ, если у пользователя нет корзины
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 

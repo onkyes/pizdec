@@ -199,7 +199,7 @@ final class BasketLimitTest extends WebTestCase
     }
 
     public function testUpdateRejectsQuantityOverCategoryLimit(): void
-// проверяет, что через patch нельзя поставить quantity выше лимита категории
+    // проверяет, что через patch нельзя поставить quantity выше лимита категории
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 

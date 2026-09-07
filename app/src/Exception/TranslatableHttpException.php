@@ -12,8 +12,8 @@ final class TranslatableHttpException extends \RuntimeException
     public function __construct(
         private readonly string $translationKey,
         private readonly int $statusCode,
-        private readonly array $translationParameters = [])
-    {
+        private readonly array $translationParameters = [],
+    ) {
         parent::__construct($translationKey);
     }
 
