@@ -8,14 +8,14 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final readonly class AddBasketItemRequest
 {
-    #[Assert\NotNull(message: 'Товар обязателен')]
-    #[Assert\Type('integer', message: 'ID товара должен быть целым числом')]
-    #[Assert\Positive(message: 'ID товара должен быть больше 0')]
+    #[Assert\NotNull(message: 'basket.product.required')]
+    #[Assert\Type('integer', message: 'basket.product_id.integer')]
+    #[Assert\Positive(message: 'basket.product_id.positive')]
     public int $productId;
 
-    #[Assert\NotNull(message: 'Количество обязательно')]
-    #[Assert\Type('integer', message: 'Количество должно быть целым числом')]
-    #[Assert\Positive(message: 'Количество должно быть больше 0')]
+    #[Assert\NotNull(message: 'basket.quantity.required')]
+    #[Assert\Type('integer', message: 'basket.quantity.integer')]
+    #[Assert\Positive(message: 'basket.quantity.positive')]
     public int $quantity;
 
     public function __construct(

@@ -62,7 +62,10 @@ final class ProductAccessTest extends WebTestCase
             '/api/login_check',
             [],
             [],
-            ['CONTENT_TYPE' => 'application/json'],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_ACCEPT_LANGUAGE' => 'ru',
+            ],
             json_encode([
                 'email' => $email,
                 'password' => 'wrong-password',
@@ -72,6 +75,11 @@ final class ProductAccessTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
         // ждём 401, потому что логин/пароль не совпали
+
+        self::assertSame(
+            ['message' => 'Неверный email или пароль'],
+            $this->decodeResponse($client),
+        );
     }
 
     public function testGuestCanRead(): void
@@ -100,7 +108,10 @@ final class ProductAccessTest extends WebTestCase
             '/api/products', // гость без токена пытается создать продукт
             [],
             [],
-            ['CONTENT_TYPE' => 'application/json'], // тело запроса json
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_ACCEPT_LANGUAGE' => 'ru',
+            ], // тело запроса json
             json_encode([
                 'name' => 'Guest product',
                 'description' => 'Guest description',
@@ -112,6 +123,45 @@ final class ProductAccessTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
         // проверяем, что без токена создавать нельзя, получаем 401
+
+        self::assertSame(
+            ['message' => 'Требуется авторизация'],
+            $this->decodeResponse($client),
+        );
+    }
+
+    public function testUnknownLocaleFallsBackToRussian(): void
+    // проверяет, что для неподдерживаемого языка используется русский
+    {
+        $client = self::createClient(); // создаём тестовый http-клиент
+
+        $client->request(
+            'POST',
+            '/api/products',
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_ACCEPT_LANGUAGE' => 'de',
+            ],
+            json_encode([
+                'name' => 'Guest product',
+                'description' => 'Guest description',
+                'price' => 100,
+                'weight' => 200,
+                'category' => 'food',
+            ], JSON_THROW_ON_ERROR),
+        );
+        // гость без токена отправляет запрос с неподдерживаемым языком de
+
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        // проверяем, что запрос отклонён с 401
+
+        self::assertSame(
+            ['message' => 'Требуется авторизация'],
+            $this->decodeResponse($client),
+        );
+        // проверяем, что неизвестный язык переключился на русский
     }
 
     public function testUserCannotCreate(): void
@@ -119,6 +169,7 @@ final class ProductAccessTest extends WebTestCase
         $client = self::createClient(); // тест-клиент
 
         $headers = $this->authHeaders($client, 'ROLE_USER');
+        $headers['HTTP_ACCEPT_LANGUAGE'] = 'ru';
 
         $client->request(
             'POST',
@@ -137,6 +188,11 @@ final class ProductAccessTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
         // проверяем, что юзер авторизован, но прав на создание нет, получаем 403
+
+        self::assertSame(
+            ['message' => 'Недостаточно прав'],
+            $this->decodeResponse($client),
+        );
     }
 
     public function testAdminCanCreate(): void
@@ -182,7 +238,10 @@ final class ProductAccessTest extends WebTestCase
             '/api/products/' . $product->getId(), // гость без токена пытается обновить продукт
             [],
             [],
-            ['CONTENT_TYPE' => 'application/json'],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_ACCEPT_LANGUAGE' => 'en',
+            ],
             json_encode([
                 'name' => 'Guest updated product',
             ], JSON_THROW_ON_ERROR),
@@ -190,6 +249,11 @@ final class ProductAccessTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
         // без токена обновлять нельзя, получаем 401
+
+        self::assertSame(
+            ['message' => 'Authentication required'],
+            $this->decodeResponse($client),
+        );
     }
 
     public function testUserCannotUpdate(): void

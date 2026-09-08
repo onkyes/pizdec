@@ -9,6 +9,7 @@ use App\Dto\ReportResponse;
 use App\Entity\OutboxMessage;
 use App\Entity\Report;
 use App\Enum\ReportStatus;
+use App\Exception\TranslatableHttpException;
 use App\Message\GenerateReportMessage;
 use App\Repository\ReportRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -38,8 +39,8 @@ final class ReportController extends AbstractController // отчёты
                 new \DateTimeImmutable($dto->periodTo), // дата конца периода
             );
         } catch (\Throwable $e) { // если дата битая или период неверный
-            return $this->json(
-                ['message' => $e->getMessage()],
+            throw new TranslatableHttpException(
+                'report.invalid_period',
                 Response::HTTP_BAD_REQUEST,
             );
         }
@@ -73,9 +74,9 @@ final class ReportController extends AbstractController // отчёты
         $report = $reportRepository->find($id); // ищем отчёт по id
 
         if ($report === null) { // если отчёта нет
-            return $this->json( // возвращаем json с ошибкой
-                ['message' => 'Отчёт не найден'], // текст ошибки
-                Response::HTTP_NOT_FOUND, // код 404
+            throw new TranslatableHttpException(
+                'report.not_found',
+                Response::HTTP_NOT_FOUND,
             );
         }
 
@@ -95,15 +96,15 @@ final class ReportController extends AbstractController // отчёты
         $report = $reportRepository->find($id); // ищем отчёт по id
 
         if ($report === null) { // если отчёта нет
-            return $this->json( // возвращаем json с ошибкой
-                ['message' => 'Отчёт не найден'], // текст ошибки
+            throw new TranslatableHttpException(
+                'report.not_found',
                 Response::HTTP_NOT_FOUND, // код 404
             );
         }
 
         if ($report->getStatus() !== ReportStatus::Completed || $report->getFilePath() === null) { // если отчёт ещё не готов
-            return $this->json( // возвращаем json с ошибкой
-                ['message' => 'Отчёт ещё не готов'], // текст ошибки
+            throw new TranslatableHttpException(
+                'report.not_ready', // текст ошибки
                 Response::HTTP_CONFLICT, // код 409
             );
         }
@@ -111,8 +112,8 @@ final class ReportController extends AbstractController // отчёты
         try {
             $stream = $reportsStorage->readStream($report->getFilePath());
         } catch (FilesystemException) {
-            return $this->json(
-                ['message' => 'Файл отчёта не найден'],
+            throw new TranslatableHttpException(
+                'report.file_not_found',
                 Response::HTTP_NOT_FOUND,
             );
         }

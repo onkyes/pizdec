@@ -12,13 +12,13 @@ use App\Entity\BuyerOrderItem;
 use App\Entity\User;
 use App\Enum\DeliveryType;
 use App\Enum\OrderStatus;
+use App\Exception\TranslatableHttpException;
 use App\Repository\BasketRepository;
 use App\Repository\BuyerOrderRepository;
 use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpFoundation\Response;
 
 final readonly class OrderService
 {
@@ -39,9 +39,9 @@ final readonly class OrderService
             // открываем транзакцию и передаём основную логику создания заказа в отдельный метод
         } catch (RetryableException $e) {
             // ловим конфликт конкурентного обновления, если база не смогла безопасно выполнить операцию
-            throw new ConflictHttpException(
-                'Корзина сейчас обновляется. Повторите запрос.',
-                $e,
+            throw new TranslatableHttpException(
+                'basket.locked',
+                Response::HTTP_CONFLICT,
             );
             // отдаём понятную ошибку 409 вместо неожиданной ошибки базы
         }
@@ -65,11 +65,17 @@ final readonly class OrderService
         $order = $this->buyerOrderRepository->find($orderId);
 
         if ($order === null) {
-            throw new NotFoundHttpException('Заказ не найден');
+            throw new TranslatableHttpException(
+                'order.not_found',
+                Response::HTTP_NOT_FOUND,
+            );
         }
 
         if ($order->getOwner()->getId() !== $user->getId()) {
-            throw new NotFoundHttpException('Заказ не найден');
+            throw new TranslatableHttpException(
+                'order.not_found',
+                Response::HTTP_NOT_FOUND,
+            );
         }
 
         return $order;
@@ -84,7 +90,10 @@ final readonly class OrderService
         // ищем корзину текущего пользователя в базе
 
         if ($basket === null) {
-            throw new NotFoundHttpException('Корзина не найдена');
+            throw new TranslatableHttpException(
+                'basket.not_found',
+                Response::HTTP_NOT_FOUND,
+            );
         }
         // если корзины нет, заказ создать нельзя
 

@@ -9,10 +9,10 @@ use Symfony\Component\Validator\Constraints as Assert;
 final readonly class PaginationRequest
 {
     public function __construct(
-        #[Assert\Positive(message: 'Page must be greater than 0')]
+        #[Assert\Positive(message: 'pagination.page.positive')]
         public int $page = 1,
         #[Assert\Range(
-            notInRangeMessage: 'Limit must be between {{ min }} and {{ max }}',
+            notInRangeMessage: 'pagination.limit.range',
             min: 1,
             max: 20,
         )]

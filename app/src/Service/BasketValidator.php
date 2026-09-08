@@ -8,7 +8,8 @@ use App\Entity\Basket;
 use App\Entity\BasketItem;
 use App\Entity\Product;
 use App\Enum\ProductCategory;
-use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
+use App\Exception\TranslatableHttpException;
+use Symfony\Component\HttpFoundation\Response;
 
 final readonly class BasketValidator
 {
@@ -60,14 +61,24 @@ final readonly class BasketValidator
 
         if ($newCategoryCount > $maxCategoryCount) {
             // если итоговое количество стало больше лимита, обновлять нельзя
-            throw new UnprocessableEntityHttpException('Превышен лимит товаров этой категории');
+            throw new TranslatableHttpException(
+                'basket.category_limit_exceeded',
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                [
+                    '%category%' => $category,
+                    '%limit%' => $maxCategoryCount,
+                ],
+            );
         }
     }
 
     public function assertBasketIsNotEmpty(Basket $basket): void
     {
         if ($basket->getItems()->isEmpty()) {
-            throw new UnprocessableEntityHttpException('Нельзя оформить заказ с пустой корзиной');
+            throw new TranslatableHttpException(
+                'basket.empty',
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+            );
         }
     }
 
@@ -92,7 +103,10 @@ final readonly class BasketValidator
         return match ($category) {
             ProductCategory::Food->value => Basket::MAX_FOOD_COUNT,
             ProductCategory::Drink->value => Basket::MAX_DRINK_COUNT,
-            default => throw new UnprocessableEntityHttpException('Неизвестная категория товара'),
+            default => throw new TranslatableHttpException(
+                'basket.unknown_category',
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+            ),
         };
     }
 }

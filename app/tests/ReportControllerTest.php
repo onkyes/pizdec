@@ -22,7 +22,10 @@ final class ReportControllerTest extends WebTestCase
         $client = self::createClient(); // создаём тестовый http-клиент
         $client->disableReboot(); // оставляем один kernel для доступа к контейнеру после запроса
 
-        $headers = $this->authHeaders($client, 'ROLE_ADMIN'); // логинимся админом
+        $headers = array_merge(
+            $this->authHeaders($client, 'ROLE_ADMIN'),
+            ['HTTP_ACCEPT_LANGUAGE' => 'ru'],
+        ); // логинимся админом
 
         $client->request(
             'POST',
@@ -192,7 +195,10 @@ final class ReportControllerTest extends WebTestCase
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
-        $headers = $this->authHeaders($client, 'ROLE_ADMIN'); // логинимся админом
+        $headers = array_merge(
+            $this->authHeaders($client, 'ROLE_ADMIN'),
+            ['HTTP_ACCEPT_LANGUAGE' => 'ru'],
+        ); // логинимся админом // логинимся админом
 
         $em = self::getContainer()->get(EntityManagerInterface::class);
         // достаём entity manager для подготовки отчёта
@@ -228,7 +234,10 @@ final class ReportControllerTest extends WebTestCase
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
-        $headers = $this->authHeaders($client, 'ROLE_ADMIN'); // логинимся админом
+        $headers = array_merge(
+            $this->authHeaders($client, 'ROLE_ADMIN'),
+            ['HTTP_ACCEPT_LANGUAGE' => 'ru'],
+        ); // логинимся админом
 
         $client->request(
             'GET',
@@ -253,7 +262,10 @@ final class ReportControllerTest extends WebTestCase
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
-        $headers = $this->authHeaders($client, 'ROLE_ADMIN'); // логинимся админом
+        $headers = array_merge(
+            $this->authHeaders($client, 'ROLE_ADMIN'),
+            ['HTTP_ACCEPT_LANGUAGE' => 'ru'],
+        ); // логинимся админом
 
         $client->request(
             'GET',
@@ -301,7 +313,10 @@ final class ReportControllerTest extends WebTestCase
     {
         $client = self::createClient(); // создаём тестовый http-клиент
 
-        $headers = $this->authHeaders($client, 'ROLE_ADMIN'); // логинимся админом
+        $headers = array_merge(
+            $this->authHeaders($client, 'ROLE_ADMIN'),
+            ['HTTP_ACCEPT_LANGUAGE' => 'ru'],
+        ); // логинимся админом
 
         $client->request(
             'POST',
@@ -321,7 +336,7 @@ final class ReportControllerTest extends WebTestCase
         $data = $this->decodeResponse($client);
         // декодируем json ошибки
 
-        self::assertSame('Начало периода отчёта не может быть позже окончания.', $data['message']);
+        self::assertSame('Некорректный период отчёта', $data['message']);
         // проверяем текст ошибки
     }
 }

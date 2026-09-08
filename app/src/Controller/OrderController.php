@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Dto\CreateOrderRequest;
 use App\Entity\BuyerOrder;
 use App\Entity\User;
+use App\Exception\TranslatableHttpException;
 use App\Service\OrderService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -26,7 +27,7 @@ final class OrderController extends AbstractController
 
         if (!$user instanceof User) {
             // если пользователя нет, значит запрос без авторизации
-            return $this->json(['message' => 'Требуется авторизация'], Response::HTTP_UNAUTHORIZED);
+            throw new TranslatableHttpException('auth.required', Response::HTTP_UNAUTHORIZED);
         }
 
         $order = $orderService->createOrder($user, $dto);
@@ -45,7 +46,7 @@ final class OrderController extends AbstractController
         $user = $this->getUser();
 
         if (!$user instanceof User) {
-            return $this->json(['message' => 'Требуется авторизация'], Response::HTTP_UNAUTHORIZED);
+            throw new TranslatableHttpException('auth.required', Response::HTTP_UNAUTHORIZED);
         }
 
         $orders = $orderService->getUserOrders($user);
@@ -70,7 +71,7 @@ final class OrderController extends AbstractController
 
         if (!$user instanceof User) {
             // если пользователя нет, значит запрос без авторизации
-            return $this->json(['message' => 'Требуется авторизация'], Response::HTTP_UNAUTHORIZED);
+            throw new TranslatableHttpException('auth.required', Response::HTTP_UNAUTHORIZED);
         }
 
         $order = $orderService->getUserOrder($user, $id);
