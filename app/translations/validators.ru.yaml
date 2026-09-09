@@ -25,3 +25,6 @@ order.delivery_postal_code.required: 'Необходимо указать поч
 
 pagination.page.positive: 'Номер страницы должен быть больше 0'
 pagination.limit.range: 'Лимит должен быть от {{ min }} до {{ max }}'
+
+user.role.required: 'Необходимо указать роль'
+user.role.choice: 'Роль должна быть ROLE_USER или ROLE_ADMIN'

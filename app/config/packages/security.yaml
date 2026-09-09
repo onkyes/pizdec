@@ -35,6 +35,7 @@ security:
         - { path: ^/api/register, roles: PUBLIC_ACCESS, methods: [ POST ] }
         - { path: ^/api/products, roles: PUBLIC_ACCESS, methods: [ GET ] }
         - { path: ^/api/products, roles: ROLE_ADMIN, methods: [ POST, PATCH, DELETE ] }
+        - { path: ^/api/admin, roles: ROLE_ADMIN }
 
 when@test:
     security:

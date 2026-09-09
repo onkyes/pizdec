@@ -1,4 +1,5 @@
 user.email_exists: 'User with this email already exists'
+user.not_found: 'User not found'
 report.not_found: 'Report not found'
 report.not_ready: 'Report is not ready yet'
 report.file_not_found: 'Report file not found'

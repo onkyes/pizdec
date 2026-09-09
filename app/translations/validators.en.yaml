@@ -25,3 +25,6 @@ order.delivery_postal_code.required: 'Postal code is required'
 
 pagination.page.positive: 'Page must be greater than 0'
 pagination.limit.range: 'Limit must be between {{ min }} and {{ max }}'
+
+user.role.required: 'Role is required'
+user.role.choice: 'Role must be ROLE_USER or ROLE_ADMIN'
