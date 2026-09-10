@@ -6,6 +6,7 @@ namespace App\Tests;
 
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\TestWith;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -175,6 +176,65 @@ final class AdminUserControllerTest extends WebTestCase
 
         self::assertNotContains('ROLE_ADMIN', $data['roles']);
         // роль администратора снята
+    }
+
+    #[TestWith(['ru', 'Нельзя снять роль администратора с самого себя'])]
+    #[TestWith(['en', 'You cannot remove your own administrator role'])]
+    public function testAdminCannotDemoteSelf(string $locale, string $message): void
+    {
+        $client = self::createClient();
+
+        $email = 'self_demote_' . uniqid() . '@example.com';
+        $admin = $this->createUser($email, 'password', ['ROLE_ADMIN']);
+        $adminId = $admin->getId();
+        $token = $this->getToken($client, $email, 'password');
+        $headers = [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+            'HTTP_ACCEPT_LANGUAGE' => $locale,
+        ];
+
+        $client->request(
+            'PATCH',
+            '/api/admin/users/' . $adminId . '/role',
+            [],
+            [],
+            $headers,
+            json_encode(['role' => 'ROLE_USER'], JSON_THROW_ON_ERROR),
+        );
+
+        self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+        self::assertSame(['message' => $message], $this->decodeResponse($client));
+        $this->assertUserHasRole($adminId, 'ROLE_ADMIN');
+
+        $client->request('GET', '/api/admin/users', [], [], $headers);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+    }
+
+    public function testAdminCanKeepOwnAdminRole(): void
+    {
+        $client = self::createClient();
+
+        $email = 'self_admin_' . uniqid() . '@example.com';
+        $admin = $this->createUser($email, 'password', ['ROLE_ADMIN']);
+        $adminId = $admin->getId();
+        $token = $this->getToken($client, $email, 'password');
+
+        $client->request(
+            'PATCH',
+            '/api/admin/users/' . $adminId . '/role',
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+            ],
+            json_encode(['role' => 'ROLE_ADMIN'], JSON_THROW_ON_ERROR),
+        );
+
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+        $this->assertUserHasRole($adminId, 'ROLE_ADMIN');
     }
 
     public function testUpdateRoleInvalidValue(): void

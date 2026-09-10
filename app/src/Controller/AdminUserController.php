@@ -7,6 +7,8 @@ namespace App\Controller;
 use App\Dto\PaginationRequest;
 use App\Dto\UpdateUserRoleRequest;
 use App\Entity\User;
+use App\Enum\Role;
+use App\Exception\TranslatableHttpException;
 use App\Repository\UserRepository;
 use App\Service\UserListProvider;
 use Doctrine\ORM\EntityManagerInterface;
@@ -38,7 +40,17 @@ final class AdminUserController extends AbstractController
         UserRepository $repository,
         EntityManagerInterface $em,
     ): JsonResponse {
+        $currentUser = $this->getUser();
+
+        if (!$currentUser instanceof User) {
+            throw new TranslatableHttpException('auth.required', Response::HTTP_UNAUTHORIZED);
+        }
+
         $user = $repository->getById($id);
+
+        if ($user->getId() === $currentUser->getId() && $dto->role === Role::User->value) {
+            throw new TranslatableHttpException('user.cannot_demote_self', Response::HTTP_FORBIDDEN);
+        }
 
         $user->setRoles([$dto->role]);
 
