@@ -1,4 +1,6 @@
 user.email_exists: 'Пользователь с таким email уже существует'
+user.not_found: 'Пользователь не найден'
+user.cannot_demote_self: 'Нельзя снять роль администратора с самого себя'
 report.not_found: 'Отчёт не найден'
 report.not_ready: 'Отчёт ещё не готов'
 report.file_not_found: 'Файл отчёта не найден'
