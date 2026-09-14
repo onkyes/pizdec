@@ -9,6 +9,8 @@ use App\Entity\BuyerOrder;
 use App\Entity\User;
 use App\Exception\TranslatableHttpException;
 use App\Service\OrderService;
+use Nelmio\ApiDocBundle\Attribute\Model;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,6 +20,110 @@ use Symfony\Component\Routing\Attribute\Route;
 final class OrderController extends AbstractController
 {
     #[Route('/api/orders', name: 'order_create', methods: ['POST'])]
+    #[OA\Post(
+        description: 'Создаёт заказ из корзины авторизованного пользователя. '
+        . 'Корзина должна содержать товары. '
+        . 'После оформления корзина очищается. '
+        . 'Для самовывоза адрес не нужен, для курьерской доставки обязателен.',
+        summary: 'Оформить заказ',
+        security: [['Bearer' => []]],
+        tags: ['Orders'],
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            ref: new Model(type: CreateOrderRequest::class),
+            examples: [
+                new OA\Examples(
+                    example: 'pickup',
+                    summary: 'Самовывоз',
+                    value: [
+                        'deliveryType' => 'pickup',
+                    ],
+                ),
+                new OA\Examples(
+                    example: 'courier',
+                    summary: 'Курьерская доставка',
+                    value: [
+                        'deliveryType' => 'courier',
+                        'deliveryRegion' => 'Московская область',
+                        'deliveryCity' => 'Химки',
+                        'deliveryStreet' => 'Молодёжная',
+                        'deliveryHouse' => '10',
+                        'deliveryPostalCode' => '141400',
+                    ],
+                ),
+            ],
+        ),
+    )]
+    #[OA\Response(
+        response: Response::HTTP_CREATED,
+        description: 'Заказ создан',
+        content: new OA\JsonContent(
+            type: 'object',
+            example: [
+                'id' => 1,
+                'status' => 'created',
+                'total' => 1_000,
+                'deliveryType' => 'pickup',
+                'deliveryAddress' => [
+                    'region' => null,
+                    'city' => null,
+                    'street' => null,
+                    'house' => null,
+                    'entrance' => null,
+                    'apartment' => null,
+                    'postalCode' => null,
+                ],
+                'items' => [
+                    [
+                        'id' => 1,
+                        'productId' => 1,
+                        'productName' => 'Маргарита',
+                        'productPrice' => 500,
+                        'productWeight' => 450,
+                        'productCategory' => 'food',
+                        'quantity' => 2,
+                        'lineTotal' => 1_000,
+                    ],
+                ],
+                'createdAt' => '2026-09-14T12:00:00+00:00',
+                'updatedAt' => '2026-09-14T12:00:00+00:00',
+            ],
+        ),
+    )]
+    #[OA\Response(
+        response: Response::HTTP_UNAUTHORIZED,
+        description: 'Требуется авторизация',
+        content: new OA\JsonContent(
+            type: 'object',
+            example: ['message' => 'Требуется авторизация'],
+        ),
+    )]
+    #[OA\Response(
+        response: Response::HTTP_NOT_FOUND,
+        description: 'Корзина пользователя не найдена',
+        content: new OA\JsonContent(
+            type: 'object',
+            example: ['message' => 'Корзина не найдена'],
+        ),
+    )]
+    #[OA\Response(
+        response: Response::HTTP_UNPROCESSABLE_ENTITY,
+        description: 'Ошибка валидации полей запроса или пустая корзина',
+        content: new OA\JsonContent(
+            type: 'object',
+            example: ['message' => 'Нельзя оформить заказ с пустой корзиной'],
+        ),
+    )]
+    #[OA\Response(
+        response: Response::HTTP_CONFLICT,
+        description: 'Конфликт конкурентного изменения корзины',
+        content: new OA\JsonContent(
+            type: 'object',
+            example: ['message' => 'Корзина сейчас обновляется. Повторите запрос.'],
+        ),
+    )]
     public function create(
         #[MapRequestPayload]
         CreateOrderRequest $dto,

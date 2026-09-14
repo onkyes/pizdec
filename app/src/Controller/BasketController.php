@@ -10,6 +10,7 @@ use App\Entity\Basket;
 use App\Entity\User;
 use App\Exception\TranslatableHttpException;
 use App\Service\BasketService;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -33,6 +34,112 @@ final class BasketController extends AbstractController
     }
 
     #[Route('/api/basket/items', name: 'basket_item_add', methods: ['POST'])]
+    #[OA\Post(
+        description: 'Добавляет товар в корзину текущего пользователя. '
+        . 'Требуется JWT-авторизация. '
+        . 'Если товар уже есть, его количество увеличивается. '
+        . 'Количество ограничивается остатком до лимита категории: '
+        . '10 единиц еды или 20 напитков. '
+        . 'При достигнутом лимите корзина остаётся без изменений; ответ — 200.',
+        summary: 'Добавить товар в корзину',
+        security: [['Bearer' => []]],
+        tags: ['Basket'],
+    )]
+    #[OA\Response(
+        response: Response::HTTP_OK,
+        description: 'Корзина после обработки запроса',
+        content: new OA\JsonContent(
+            required: ['id', 'items', 'total'],
+            properties: [
+                new OA\Property(
+                    property: 'id',
+                    description: 'ID корзины',
+                    type: 'integer',
+                    example: 1,
+                ),
+                new OA\Property(
+                    property: 'items',
+                    type: 'array',
+                    items: new OA\Items(
+                        required: [
+                            'id', 'productId', 'productName',
+                            'price', 'quantity', 'lineTotal',
+                        ],
+                        properties: [
+                            new OA\Property(
+                                property: 'id',
+                                description: 'ID позиции корзины',
+                                type: 'integer',
+                                example: 1,
+                            ),
+                            new OA\Property(
+                                property: 'productId',
+                                type: 'integer',
+                                example: 1,
+                            ),
+                            new OA\Property(
+                                property: 'productName',
+                                type: 'string',
+                                example: 'Маргарита',
+                            ),
+                            new OA\Property(
+                                property: 'price',
+                                type: 'integer',
+                                example: 500,
+                            ),
+                            new OA\Property(
+                                property: 'quantity',
+                                type: 'integer',
+                                example: 2,
+                            ),
+                            new OA\Property(
+                                property: 'lineTotal',
+                                description: 'Цена товара × количество',
+                                type: 'integer',
+                                example: 1_000,
+                            ),
+                        ],
+                        type: 'object',
+                    ),
+                ),
+                new OA\Property(
+                    property: 'total',
+                    description: 'Общая стоимость корзины',
+                    type: 'integer',
+                    example: 1_000,
+                ),
+            ],
+            type: 'object',
+        ),
+    )]
+    #[OA\Response(
+        response: Response::HTTP_UNAUTHORIZED,
+        description: 'Требуется авторизация',
+        content: new OA\JsonContent(
+            required: ['message'],
+            properties: [
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    example: 'Требуется авторизация',
+                ),
+            ],
+            type: 'object',
+        ),
+    )]
+    #[OA\Response(
+        response: Response::HTTP_NOT_FOUND,
+        description: 'Товар с указанным productId не найден',
+    )]
+    #[OA\Response(
+        response: Response::HTTP_UNPROCESSABLE_ENTITY,
+        description: 'Ошибка валидации productId или quantity; '
+        . 'также возможна неизвестная категория товара.',
+    )]
+    #[OA\Response(
+        response: Response::HTTP_CONFLICT,
+        description: 'Конфликт конкурентного изменения корзины. Повторите запрос.',
+    )]
     public function add(
         #[MapRequestPayload]
         AddBasketItemRequest $dto,
