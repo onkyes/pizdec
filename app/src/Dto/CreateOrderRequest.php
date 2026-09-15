@@ -5,11 +5,17 @@ declare(strict_types=1);
 namespace App\Dto;
 
 use App\Enum\DeliveryType;
+use OpenApi\Attributes as OA;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 final readonly class CreateOrderRequest
 {
+    #[OA\Property(
+        description: 'Способ получения: pickup — самовывоз, courier — доставка курьером',
+        type: 'string',
+        example: 'pickup',
+    )]
     #[Assert\NotBlank(message: 'order.delivery_type.required')]
     #[Assert\Type('string')]
     #[Assert\Choice(
@@ -18,24 +24,66 @@ final readonly class CreateOrderRequest
     )]
     public string $deliveryType;
 
+    #[OA\Property(
+        description: 'Область. Обязательна при courier',
+        type: 'string',
+        example: 'Московская область',
+        nullable: true,
+    )]
     #[Assert\Type('string')]
     public ?string $deliveryRegion;
 
+    #[OA\Property(
+        description: 'Город. Обязателен при courier',
+        type: 'string',
+        example: 'Химки',
+        nullable: true,
+    )]
     #[Assert\Type('string')]
     public ?string $deliveryCity;
 
+    #[OA\Property(
+        description: 'Улица. Обязательна при courier',
+        type: 'string',
+        example: 'Молодёжная',
+        nullable: true,
+    )]
     #[Assert\Type('string')]
     public ?string $deliveryStreet;
 
+    #[OA\Property(
+        description: 'Дом. Обязателен при courier',
+        type: 'string',
+        example: '10',
+        nullable: true,
+    )]
     #[Assert\Type('string')]
     public ?string $deliveryHouse;
 
+    #[OA\Property(
+        description: 'Подъезд. Необязательное поле',
+        type: 'string',
+        example: '1',
+        nullable: true,
+    )]
     #[Assert\Type('string')]
     public ?string $deliveryEntrance;
 
+    #[OA\Property(
+        description: 'Квартира. Необязательное поле',
+        type: 'string',
+        example: '25',
+        nullable: true,
+    )]
     #[Assert\Type('string')]
     public ?string $deliveryApartment;
 
+    #[OA\Property(
+        description: 'Почтовый индекс: ровно 6 цифр. Обязателен при courier',
+        type: 'string',
+        example: '141400',
+        nullable: true,
+    )]
     #[Assert\Type('string')]
     #[Assert\Regex(
         pattern: '/^\d{6}$/',
