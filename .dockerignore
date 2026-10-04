@@ -1,0 +1,13 @@
+.git
+.idea
+vendor
+frontend/node_modules
+frontend/dist
+app/vendor
+app/var
+app/.phpunit.cache
+**/.env.local
+**/.env.*.local
+app/config/jwt/*.pem
+app/config/secrets/prod/prod.decrypt.private.php
+.secrets/
