@@ -42,3 +42,6 @@ FROM base AS prod
 
 COPY app /var/www/app
 COPY --from=vendor_prod /app/vendor /var/www/app/vendor
+
+RUN mkdir -p /var/www/app/var/cache /var/www/app/var/log /var/www/app/var/share \
+    && chown -R www-data:www-data /var/www/app/var

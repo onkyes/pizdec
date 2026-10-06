@@ -58,3 +58,40 @@ API поддерживает русский (`ru`) и английский (`en`
 
 - fallback при выборе языка запроса — `ru`;
 - fallback при отсутствии ключа перевода — `en`.
+
+## Production-конфигурация
+
+Используйте два явно указанных Compose-файла, чтобы dev override не подключался.
+PHP собирается без dev-зависимостей; исходники находятся в образах.
+Внутренние сервисы не публикуют порты. Frontend слушает только 127.0.0.1
+на FRONTEND_PORT: серверный nginx с HTTPS должен проксировать на этот адрес.
+
+Подготовка:
+
+- Создайте `.env.infrastructure.local` с инфраструктурными переменными из
+  корневого `.env`: порты, POSTGRES_*, RABBITMQ_*, MINIO_* и PHP_TARGET=prod.
+  Задайте production credentials, не используйте локальные пароли.
+- Создайте `.env.production.local`: APP_SECRET, DEFAULT_URI, DATABASE_URL,
+  REDIS_URL, MESSENGER_TRANSPORT_DSN, MINIO_ENDPOINT, MINIO_ACCESS_KEY,
+  MINIO_SECRET_KEY, JWT_SECRET_KEY, JWT_PUBLIC_KEY, JWT_PASSPHRASE.
+  Внутренние адреса используют db, redis, rabbitmq, minio и контейнерные порты.
+  Credentials приложения должны соответствовать инфраструктурным переменным.
+- Разместите JWT-ключи в `.secrets/jwt/`. Пути внутри контейнера начинаются с
+  `/var/www/app/config/jwt/`. Приватный ключ должен читаться PHP-процессом;
+  каталог монтируется только для чтения.
+- Реальные env-файлы и приватные ключи не добавляйте в Git.
+
+Проверка конфигурации и сборка:
+
+```bash
+docker compose --env-file .env.infrastructure.local -f docker-compose.yml -f docker-compose.prod.yaml config --quiet
+docker compose --env-file .env.infrastructure.local -f docker-compose.yml -f docker-compose.prod.yaml build
+```
+
+VITE_API_BASE_URL передаётся при сборке frontend, по умолчанию `/api`.
+После изменения адреса пересоберите образ.
+Данные PostgreSQL, RabbitMQ и MinIO сохраняются в именованных volumes.
+Не используйте `down --volumes` для production: это удаляет данные.
+
+Это подготовка конфигурации: HTTPS, порядок миграций, резервное копирование,
+откат и CI/CD ещё нужно настроить перед production-деплоем.
