@@ -74,9 +74,9 @@ echo "Резервная копия создана: $backup"
     php bin/console doctrine:migrations:migrate \
     --env=prod --no-interaction
 
-# Запускаем опубликованные образы, без сборки и обновления инфраструктуры
-"${compose[@]}" up -d --no-deps --no-build --pull never \
-    php nginx frontend php-scheduler php-reports-worker
+# Обновляем адреса контейнеров после их перезапуска.
+"${compose[@]}" exec -T nginx nginx -s reload
+"${compose[@]}" exec -T frontend nginx -s reload
 
 # Даём приложению время запуститься
 ready=0
