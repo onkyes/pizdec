@@ -70,7 +70,7 @@ mv "${backup}.partial" "$backup"
 echo "Резервная копия создана: $backup"
 
 # Применяем миграции из новой версии образа
-"${compose[@]}" run --rm --no-deps --no-build php \
+"${compose[@]}" run --rm --no-deps --pull never php \
     php bin/console doctrine:migrations:migrate \
     --env=prod --no-interaction
 
