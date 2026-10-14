@@ -28,7 +28,7 @@ onMounted(async () => {
 
 <template>
   <main>
-    <h1>Пицца и напитки</h1>
+    <h1>Привет! Выбери любимую пиццу!</h1>
 
     <p v-if="isLoading">Загружаем товары…</p>
     <p v-else-if="errorMessage" role="alert">{{ errorMessage }}</p>
