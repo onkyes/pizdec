@@ -1,0 +1,15 @@
+services:
+  php:
+    image: ghcr.io/onkyes/pizdec-php:${RELEASE_TAG:?Set RELEASE_TAG}
+
+  php-scheduler:
+    image: ghcr.io/onkyes/pizdec-php:${RELEASE_TAG:?Set RELEASE_TAG}
+
+  php-reports-worker:
+    image: ghcr.io/onkyes/pizdec-php:${RELEASE_TAG:?Set RELEASE_TAG}
+
+  frontend:
+    image: ghcr.io/onkyes/pizdec-frontend:${RELEASE_TAG:?Set RELEASE_TAG}
+
+  nginx:
+    image: ghcr.io/onkyes/pizdec-nginx:${RELEASE_TAG:?Set RELEASE_TAG}
