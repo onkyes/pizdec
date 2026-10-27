@@ -73,6 +73,11 @@ jobs:
       DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
 
     steps:
+      - name: Checkout release
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
       - name: Configure SSH
         run: |
           install -d -m 700 ~/.ssh
@@ -89,6 +94,28 @@ jobs:
             echo "Invalid release tag: $RELEASE_TAG" >&2
             exit 1
           fi
+          release_dir="/var/www/pizdec/releases/$RELEASE_TAG"
+
+          ssh_options=(
+            -i ~/.ssh/deploy_key
+            -o IdentitiesOnly=yes
+            -o BatchMode=yes
+            -o StrictHostKeyChecking=yes
+            -o ConnectTimeout=15
+          )
+
+          ssh "${ssh_options[@]}" root@155.212.138.177 \
+            "mkdir -p '$release_dir/deploy'"
+
+          scp "${ssh_options[@]}" \
+            docker-compose.yml \
+            docker-compose.prod.yaml \
+            docker-compose.release.yaml \
+            "root@155.212.138.177:$release_dir/"
+
+          scp "${ssh_options[@]}" \
+            deploy/deploy.sh \
+            "root@155.212.138.177:$release_dir/deploy/"
 
           ssh \
             -i ~/.ssh/deploy_key \
@@ -97,7 +124,7 @@ jobs:
             -o StrictHostKeyChecking=yes \
             -o ConnectTimeout=15 \
             root@155.212.138.177 \
-            "bash /var/www/pizdec/deploy/deploy.sh '$RELEASE_TAG'"
+            "bash '$release_dir/deploy/deploy.sh' '$RELEASE_TAG'"
 
       - name: Remove SSH key
         if: always()

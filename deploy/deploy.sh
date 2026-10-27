@@ -9,7 +9,10 @@ if [[ ! "$release" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     exit 1
 fi
 
-cd /var/www/pizdec
+project_dir="/var/www/pizdec"
+release_dir="$project_dir/releases/$release"
+
+cd "$project_dir"
 
 # Не допускаем два одновременных деплоя
 exec 9>/var/lock/pizdec-deploy.lock
@@ -22,10 +25,11 @@ export RELEASE_TAG="$release"
 
 compose=(
     docker compose
-    --env-file .env.infrastructure.local
-    -f docker-compose.yml
-    -f docker-compose.prod.yaml
-    -f docker-compose.release.yaml
+    --project-directory "$project_dir"
+    --env-file "$project_dir/.env.infrastructure.local"
+    -f "$release_dir/docker-compose.yml"
+    -f "$release_dir/docker-compose.prod.yaml"
+    -f "$release_dir/docker-compose.release.yaml"
 )
 
 "${compose[@]}" config --quiet
@@ -81,11 +85,11 @@ echo "Резервная копия создана: $backup"
 "${compose[@]}" exec -T nginx nginx -s reload
 "${compose[@]}" exec -T frontend nginx -s reload
 
-# Даём приложению время запуститься
+# Проверяем API через frontend-контейнер независимо от внешнего FRONTEND_PORT.
 ready=0
 for attempt in {1..30}; do
-    if curl --fail --silent --max-time 5 \
-        http://127.0.0.1:8081/api/products > /dev/null; then
+    if "${compose[@]}" exec -T frontend wget -q -T 5 -O /dev/null \
+        http://127.0.0.1/api/products; then
         ready=1
         break
     fi
