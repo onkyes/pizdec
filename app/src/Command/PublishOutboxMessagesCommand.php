@@ -15,8 +15,10 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Scheduler\Attribute\AsPeriodicTask;
 
 #[AsCommand(name: 'app:outbox:publish')] // команда отправки outbox-сообщений в RabbitMQ
+#[AsPeriodicTask(frequency: 10)]
 final class PublishOutboxMessagesCommand extends Command
 {
     public function __construct(
